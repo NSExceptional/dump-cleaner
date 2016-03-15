@@ -20,6 +20,7 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 - Fixes properties and ivars declared like `<SomeProtocol> *_ivar;`, as they should be declared like `id<SomeProtocol> _ivar;`
 - Changes opaque-type structs to the opaque type (i.e. `struct __CFBinaryHeap { }*` becomes `CFBinaryHeap*`)
 - Removes getters and setters for properties
+- Removes some methods, like `hash` and `debugDescription`
 
 ## What it CAN'T do
 
@@ -29,3 +30,4 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 ## Todo
 
 - Correct object properties missing `retain` / `copy` attributes to have `retain` attribute.
+- Remove a distinct set of methods if present (i.e. `hash`, `cxx.destruct`, `class`, etc)
