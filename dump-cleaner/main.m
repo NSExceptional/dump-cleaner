@@ -187,9 +187,12 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
     if (error) {
         [errors addObject:error];
     } else {
-        // Replace "unsigned int" and "unsigned long" with NSUInteger
+        // Replace "unsigned int" and "unsigned long" with NSUInteger, and "double" with CGFloat
         [fileContents replaceOccurrencesOfString:@"unsigned int" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
         [fileContents replaceOccurrencesOfString:@"unsigned long" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:@"NSUInteger long" withString:@"unsigned long long" options:0 range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:@"double" withString:@"CGFloat" options:0 range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:NSMakeRange(0, fileContents.length)];
         
         // Replace full structs with their types
         [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
