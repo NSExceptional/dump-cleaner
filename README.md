@@ -13,10 +13,10 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 
 #What it does by default
 
-- If properties and their respective backing-ivar are in the same interface, they will be automatically removed
-- Automatically generates forward declarations for protocols
+- If properties and their respective backing-ivar are in the same interface, the ivars will be automatically removed
+- Automatically generates forward declarations for protocols found in the interface
 - Replaces `unsigned int` with `NSUInteger`
-- Replaces inline struct definitions (i.e. `struct CGPoint { float x; float y; }`) with their name, if the name is available (this means anonymous structs are left alone)
+- Replaces most inline struct definitions (i.e. `struct CGPoint { float x; float y; }`) with their name, if the name is available (this means anonymous structs are left alone)
 - Fixes properties and ivars declared like `<SomeProtocol> *_ivar;`, as they should be declared like `id<SomeProtocol> _ivar;`
 - Changes opaque-type structs to the opaque type (i.e. `struct __CFBinaryHeap { }*` becomes `CFBinaryHeap*`)
 - Removes getters and setters for properties
