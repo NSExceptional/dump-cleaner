@@ -11,7 +11,7 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 - `-r` Recursive
 - `-v` Verbose
 
-#What it does by default
+## What it does by default
 
 - If properties and their respective backing-ivar are in the same interface, the ivars will be automatically removed
 - Automatically generates forward declarations for protocols found in the interface
@@ -21,11 +21,11 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 - Changes opaque-type structs to the opaque type (i.e. `struct __CFBinaryHeap { }*` becomes `CFBinaryHeap*`)
 - Removes getters and setters for properties
 
-#What it CAN'T do
+## What it CAN'T do
 
 - Fix incorrect attributes on inherited properties
 - Probably some other stuff
 
-#Todo
+## Todo
 
 - Correct object properties missing `retain` / `copy` attributes to have `retain` attribute.
