@@ -52,7 +52,7 @@ BOOL DCPathIsDirectory(NSString *path);
 NSString * DCRelativePathForClassFile(NSString *class, NSString *currentPath, NSArray *otherFilePaths);
 DCOptions DCOptionsFromString(NSString *flags);
 
-#define TESTING 1
+#define TESTING 0
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -64,9 +64,9 @@ int main(int argc, const char * argv[]) {
         
         NSArray *args = DCArgsFromCharPtr(argv, argc);
 #else
-        NSArray *args = @[@"exe", @"-scprv", @"/opt/theos/include/ChatKit.framework"];
+        NSArray *args = @[@"exe", @"-scprv", @"."];
 #endif
-        NSString *flags = DCGetFlags(args);
+        NSString *flags = DCGetFlags(args.copy);
         
         // Get absolute path to working folder
         NSString *directory = DCGetDirectory(args, @"iscpPrv", flags);
@@ -194,7 +194,9 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         [fileContents replaceOccurrencesOfString:@"double" withString:@"CGFloat" options:0 range:NSMakeRange(0, fileContents.length)];
         [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:NSMakeRange(0, fileContents.length)];
         
-        // Replace full structs with their types
+        // Replace full structs with their types (thrice for possibly nested structs)
+        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
         [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
         
         // Remove NSObject overrides
@@ -202,7 +204,10 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         static NSArray *regexes = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            regexes = @[@"- \\(NSUInteger\\)hash; ?\n", @"- \\(id\\)class; ?\n", @"- \\(id\\)superclass; ?\n", @"- \\(id\\)description; ?\n", @"- \\(id\\)debugDescription; ?\n"];
+            regexes = @[@"- \\(NSUInteger\\)hash; ?\n", @"- \\(id\\)class; ?\n", @"- \\(id\\)superclass; ?\n", @"- \\(id\\)description; ?\n",
+                        @"- \\(id\\)debugDescription; ?\n", @"- \\(void\\)\\.cxx_destruct; ?\n", @"@property .+NSUInteger hash; ?\n",
+                        @"@property .+Class class; ?\n", @"@property .+Class superclass; ?\n", @"@property .+NSString \\*description; ?\n",
+                        @"@property .+NSString \\*debugDescription; ?\n"];
         });
         for (NSString *expr in regexes)
             [fileContents replaceOccurrencesOfString:expr withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
@@ -307,7 +312,11 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         }
         
         // Save changes
+#if TESTING
+        [fileContents writeToFile:[path stringByAppendingString:@".clean.txt"] atomically:YES encoding:NSUTF8StringEncoding error:nil];
+#else
         [fileContents writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+#endif
     }
 }
 
