@@ -14,7 +14,7 @@
 @property (nonatomic, readonly) NSString *pascalCaseString;
 
 - (NSString *)matchGroupAtIndex:(NSUInteger)idx forRegex:(NSString *)regex;
-- (NSArray *)allMatchesForRegex:(NSString *)regex atIndex:(NSUInteger)idx;
+- (NSArray<NSString*> *)allMatchesForRegex:(NSString *)regex atIndex:(NSUInteger)idx;
 - (NSArray<NSValue*> *)rangesForAllMatchesForRegex:(NSString *)regex atIndex:(NSUInteger)idx;
 - (NSString *)stringByReplacingMatchesForRegex:(NSString *)regex withString:(NSString *)replacement;
 

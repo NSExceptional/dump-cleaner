@@ -1,0 +1,25 @@
+//
+//  dump-cleaner-prefix.pch
+//  dump-cleaner
+//
+//  Created by Tanner on 3/20/16.
+//  Copyright © 2016 Tanner Bennett. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "dump-cleaner-constants.h"
+#import "NSString+Regex.h"
+
+
+#define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
+
+#define DCAssertEqual(a, b) DCAssert(a == b)
+#define DCAssertLessThan(a, b) DCAssert(a < b)
+#define DCAssertGreaterThan(a, b) DCAssert(a > b)
+#define DCAssertNonZero(a) DCAssert(a != 0)
+#define DCAssertTrue(a) DCAssert(a)
+#define DCAssertFalse(a) DCAssert(a == NO)
+
+#define DCAssertEqualObjects(a, b) DCAssert([a isEqual:b])
+#define DCAssertNotNil(a) DCAssert(a != nil)
+#define DCAssertNil(a) DCAssert(a == nil)

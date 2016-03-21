@@ -6,30 +6,8 @@
 //  Copyright © 2016 Tanner Bennett. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#include <getopt.h>
 #import "NSString+Regex.h"
-
-
-NSString * const kMessage = @"Usage: dumpcleaner [-iscpPrv] directory\n\t-i\tKeep property-backing ivars\n\t-s\tImport parent class (if available)\n\t-c\tImport used classes in the same directory\n\t-P\tDo not generate forward declarations for protocols\n\t-p\tRemove protocol conformities from class interfaces\n\t-r\tRecursive\n\t-v\tVerbose\n";
-
-NSString * const krStruct = @"struct (CGPoint|CGSize|CGRect|UIEdgeInsets|UIEdgeRect|NSRange|NSRect|CATransform3D) \\{(?:\\s*\\w+ \\w+;)+\\s*\\}";
-NSUInteger const krStruct_type = 1;
-NSString * const krEmptyStruct = @"struct (\\w+) *\\{ *\\}";
-NSUInteger const krEmptyStruct_type = 1;
-NSString * const krProperty = @"@property ?(?:\\((?:[\\w, =:]+)+\\) ?)?((?:\\w+(?: ?<\\w+>)?|\\w+ \\w+)(?: ?\\*)?) ?(\\w+);";
-NSUInteger const krProperty_type = 1;
-NSUInteger const krProperty_name = 2;
-NSString * const krIvarsPresent = @"@interface \\w+ : \\w+ <(?:\\w+(?:, )?)+>( \\{(?:[\\s]+[\\w\\s*;<>]+)+\\})";
-NSString * const krSupeclass = @"@interface \\w+ : (\\w+)";
-NSUInteger const krSupeclass_name = 1;
-NSString * const krDelegateMissingType = @"(?:\\n +|\\(|\\) +)((<\\w+>) *\\*?)";
-NSUInteger const krDelegateMissingType_type = 2;
-NSUInteger const krDelegateMissingType_replace = 1;
-NSString * const krProtocol = @"\\w+ ?<(\\w+)>";
-NSUInteger const krProtocol_name = 1;
-NSString * const krConformedProtocols = @"@interface \\w+ : \\w+( <[\\w, ]+>)";
-NSUInteger const krConformedProtocols_value = 1;
-
 
 typedef NS_OPTIONS(NSUInteger, DCOptions) {
     DCOptionsKeepPropertyIVars        = 1 << 0,
@@ -47,7 +25,7 @@ NSString * DCGetFlags(NSArray *args);
 NSString * DCGetDirectory(NSArray *args, NSString *allowedFlags, NSString *givenFlags);
 NSString * DCRemoveQuotes(NSString *str);
 NSArray * DCFilesInDirectory(NSString *path, BOOL recursive);
-void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors);
+void DCProcessFileSimple(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors);
 BOOL DCPathIsDirectory(NSString *path);
 NSString * DCRelativePathForClassFile(NSString *class, NSString *currentPath, NSArray *otherFilePaths);
 DCOptions DCOptionsFromString(NSString *flags);
@@ -58,7 +36,7 @@ int main(int argc, const char * argv[]) {
     @autoreleasepool {
 #if !TESTING
         if (argc < 2) {
-            printf("%s", kMessage.UTF8String);
+            printf("%s", kUsage.UTF8String);
             return 0;
         }
         
@@ -81,7 +59,7 @@ int main(int argc, const char * argv[]) {
         NSArray *filePaths = DCFilesInDirectory(directory, options & DCOptionsRecursive);
         NSMutableArray *errors = [NSMutableArray array];
         for (NSString *path in filePaths) {
-            DCProcessFile(path, filePaths, options, errors);
+            DCProcessFileSimple(path, filePaths, options, errors);
             
             if (options & DCOptionsVerbose)
                 printf("Processed file: %s\n", path.lastPathComponent.UTF8String);
@@ -128,7 +106,7 @@ NSString * DCGetDirectory(NSArray *args, NSString *allowedFlags, NSString *given
     NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:allowedFlags];
     NSString *unknownFlags = [givenFlags stringByTrimmingCharactersInSet:allowed];
     if (unknownFlags.length) {
-        printf("%s%s", [NSString stringWithFormat:@"\tUnknown flags: %@\n\n", unknownFlags].UTF8String, kMessage.UTF8String);
+        printf("%s%s", [NSString stringWithFormat:@"\tUnknown flags: %@\n\n", unknownFlags].UTF8String, kUsage.UTF8String);
         exit(0);
     }
     
@@ -137,7 +115,7 @@ NSString * DCGetDirectory(NSArray *args, NSString *allowedFlags, NSString *given
         return ![arg hasPrefix:@"-"];
     }]];
     if (args.count > 2) {
-        printf("\tToo many arguments\n\n%s\n\n%s", args.description.UTF8String, kMessage.UTF8String);
+        printf("\tToo many arguments\n\n%s\n\n%s", args.description.UTF8String, kUsage.UTF8String);
         exit(0);
     }
     
@@ -180,7 +158,7 @@ NSArray * DCFilesInDirectory(NSString *path, BOOL recursive) {
     return files.copy;
 }
 
-void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors) {
+void DCProcessFileSimple(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors) {
     NSError *error = nil;
     NSMutableString *fileContents = [NSMutableString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
     
@@ -195,9 +173,10 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:NSMakeRange(0, fileContents.length)];
         
         // Replace full structs with their types (thrice for possibly nested structs)
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+        NSString *structRegex = [NSString stringWithFormat:krStruct, krKnownStructs];
+        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
         
         // Remove NSObject overrides
         // hash, class, superclass, description, debugDescription, etc
@@ -213,7 +192,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
             [fileContents replaceOccurrencesOfString:expr withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
         
         // Import parent class
-        if (options & DCOptionsImportSuperclass) {
+        if ((options & DCOptionsImportSuperclass) == DCOptionsImportSuperclass) {
             NSString *superclass = [fileContents matchGroupAtIndex:krSupeclass_name forRegex:krSupeclass];
             NSString *relativePath = DCRelativePathForClassFile(superclass, path, otherFilePaths);
             if (relativePath) {
@@ -224,7 +203,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         }
         
         // Fix "id<protocol> foo" where id is missing
-        NSArray<NSString*> *hiccups = [fileContents allMatchesForRegex:krDelegateMissingType atIndex:krDelegateMissingType_type];
+        NSArray<NSString*> *hiccups = [fileContents allMatchesForRegex:krDelegateMissingType atIndex:krDelegateMissingType_protocol];
         NSArray<NSValue*>  *ranges  = [fileContents rangesForAllMatchesForRegex:krDelegateMissingType atIndex:krDelegateMissingType_replace];
         int i = 0, offset = 0;
         for (NSString *protocol in hiccups) {
@@ -279,7 +258,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         }
         
         // Forward protocols
-        if (options & DCOptionsForwardDeclareProtocols) {
+        if ((options & DCOptionsForwardDeclareProtocols) == DCOptionsForwardDeclareProtocols) {
             NSArray *protocols = [fileContents allMatchesForRegex:krProtocol atIndex:krProtocol_name];
             protocols = [NSSet setWithArray:protocols].allObjects;
             if (protocols.count) {
@@ -293,13 +272,13 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
         }
         
         // Remove conformed protocols
-        if (options & DCOptionsRemoveConformedProtocols) {
+        if ((options & DCOptionsRemoveConformedProtocols) == DCOptionsRemoveConformedProtocols) {
             NSRange r = [fileContents rangesForAllMatchesForRegex:krConformedProtocols atIndex:krConformedProtocols_value].firstObject.rangeValue;
             [fileContents replaceCharactersInRange:r withString:@""];
         }
         
         // Import possible classes
-        if (options & DCOptionsImportAvailibleClasses) {
+        if ((options & DCOptionsImportAvailibleClasses) == DCOptionsImportAvailibleClasses) {
             NSArray *classes = [fileContents allMatchesForRegex:@"(\\w+) ?\\* ?\\w+;" atIndex:1];
             for (NSString *missingClass in classes) {
                 NSString *relativePath = DCRelativePathForClassFile(missingClass, path, otherFilePaths);

@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		B42B3CD61C965B2700EB64F6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CD51C965B2700EB64F6 /* main.m */; };
 		B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */; };
+		B4E073331C9F80EF0076C94C /* dump-cleaner-constants.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */; };
+		B4E073371C9F83C30076C94C /* DCProperty.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073361C9F83C30076C94C /* DCProperty.m */; };
+		B4E0733A1C9F84EA0076C94C /* DCClass.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073391C9F84EA0076C94C /* DCClass.m */; };
+		B4E0735B1C9F87A30076C94C /* DCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E0735A1C9F87A30076C94C /* DCObject.m */; };
+		B4E0735E1C9FAAE30076C94C /* DCSDK.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E0735D1C9FAAE30076C94C /* DCSDK.m */; };
+		B4E073611C9FAD3D0076C94C /* DCIVar.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073601C9FAD3D0076C94C /* DCIVar.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +34,19 @@
 		B42B3CD51C965B2700EB64F6 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Regex.h"; sourceTree = "<group>"; };
 		B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Regex.m"; sourceTree = "<group>"; };
+		B4E073301C9F7F510076C94C /* dump-cleaner-prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "dump-cleaner-prefix.pch"; sourceTree = "<group>"; };
+		B4E073311C9F80EF0076C94C /* dump-cleaner-constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "dump-cleaner-constants.h"; sourceTree = "<group>"; };
+		B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "dump-cleaner-constants.m"; sourceTree = "<group>"; };
+		B4E073351C9F83C30076C94C /* DCProperty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCProperty.h; sourceTree = "<group>"; };
+		B4E073361C9F83C30076C94C /* DCProperty.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCProperty.m; sourceTree = "<group>"; };
+		B4E073381C9F84EA0076C94C /* DCClass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCClass.h; sourceTree = "<group>"; };
+		B4E073391C9F84EA0076C94C /* DCClass.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCClass.m; sourceTree = "<group>"; };
+		B4E073591C9F87A30076C94C /* DCObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCObject.h; sourceTree = "<group>"; };
+		B4E0735A1C9F87A30076C94C /* DCObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCObject.m; sourceTree = "<group>"; };
+		B4E0735C1C9FAAE30076C94C /* DCSDK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCSDK.h; sourceTree = "<group>"; };
+		B4E0735D1C9FAAE30076C94C /* DCSDK.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCSDK.m; sourceTree = "<group>"; };
+		B4E0735F1C9FAD3D0076C94C /* DCIVar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCIVar.h; sourceTree = "<group>"; };
+		B4E073601C9FAD3D0076C94C /* DCIVar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCIVar.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,8 +82,29 @@
 				B42B3CD51C965B2700EB64F6 /* main.m */,
 				B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */,
 				B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */,
+				B4E073301C9F7F510076C94C /* dump-cleaner-prefix.pch */,
+				B4E073311C9F80EF0076C94C /* dump-cleaner-constants.h */,
+				B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */,
+				B4E073341C9F83940076C94C /* Classes */,
 			);
 			path = "dump-cleaner";
+			sourceTree = "<group>";
+		};
+		B4E073341C9F83940076C94C /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				B4E0735C1C9FAAE30076C94C /* DCSDK.h */,
+				B4E0735D1C9FAAE30076C94C /* DCSDK.m */,
+				B4E073591C9F87A30076C94C /* DCObject.h */,
+				B4E0735A1C9F87A30076C94C /* DCObject.m */,
+				B4E073381C9F84EA0076C94C /* DCClass.h */,
+				B4E073391C9F84EA0076C94C /* DCClass.m */,
+				B4E073351C9F83C30076C94C /* DCProperty.h */,
+				B4E073361C9F83C30076C94C /* DCProperty.m */,
+				B4E0735F1C9FAD3D0076C94C /* DCIVar.h */,
+				B4E073601C9FAD3D0076C94C /* DCIVar.m */,
+			);
+			name = Classes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -124,7 +164,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B42B3CD61C965B2700EB64F6 /* main.m in Sources */,
+				B4E0735E1C9FAAE30076C94C /* DCSDK.m in Sources */,
+				B4E073331C9F80EF0076C94C /* dump-cleaner-constants.m in Sources */,
+				B4E0733A1C9F84EA0076C94C /* DCClass.m in Sources */,
+				B4E073611C9FAD3D0076C94C /* DCIVar.m in Sources */,
+				B4E0735B1C9F87A30076C94C /* DCObject.m in Sources */,
 				B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */,
+				B4E073371C9F83C30076C94C /* DCProperty.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,6 +203,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREFIX_HEADER = "dump-cleaner/dump-cleaner-prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -198,6 +245,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREFIX_HEADER = "dump-cleaner/dump-cleaner-prefix.pch";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -243,6 +291,7 @@
 				B42B3CDB1C965B2700EB64F6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
