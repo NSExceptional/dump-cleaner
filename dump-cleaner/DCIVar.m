@@ -19,6 +19,7 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
+        _string = string;
         _name = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_name].firstObject;
         _type = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_type].firstObject;
         NSParameterAssert(_name && _type);

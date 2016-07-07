@@ -9,6 +9,55 @@
 #import "DCSDK.h"
 
 
+@interface DCSDK ()
+@property (nonatomic, readonly) NSString *sdkPath;
+@property (nonatomic, readonly) NSString *frameworksPath;
+@property (nonatomic, readonly) NSMutableDictionary *knownClasses;
+@end
+
 @implementation DCSDK
+
+#pragma mark Initialization
+
++ (instancetype)SDKAtPath:(NSString *)path {
+    return [[self alloc] initWithPath:path];
+}
+
+- (id)initWithPath:(NSString *)path {
+    self = [super init];
+    if (self) {
+        _sdkPath = path;
+        _frameworksPath = [self.sdkPath stringByAppendingPathComponent:@"System/Library/Frameworks"];
+        _knownClasses = [NSMutableDictionary dictionary];
+        
+        // Assert that SDK exists
+        BOOL isDirectory = NO;
+        if (!([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDirectory] && isDirectory)) {
+            [NSException raise:NSInvalidArgumentException format:@"SDK does not exist at the given path: %@", path];
+        }
+    }
+    
+    return self;
+}
+
+#pragma mark Public interface
+
+- (void)processFilesAtPaths:(NSArray<NSString *> *)paths {
+    
+}
+
+#pragma mark Private
+
+- (void)findClassesInSDK {
+    NSError *error = nil;
+    NSArray *frameworks = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:self.frameworksPath error:&error];
+    
+    if (error) {
+        printf("%s", error.localizedDescription.UTF8String);
+        exit(1);
+    }
+    
+    
+}
 
 @end

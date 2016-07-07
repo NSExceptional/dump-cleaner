@@ -15,6 +15,7 @@
 }
 
 + (instancetype)withString:(NSString *)string;
+/// Subclasses should not call super
 - (id)initWithString:(NSString *)string;
 + (BOOL)test;
 

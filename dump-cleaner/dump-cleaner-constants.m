@@ -55,5 +55,7 @@ NSUInteger const krDelegateMissingType_replace  = 1;
 NSString * const krProtocol                 = @"\\w+ ?<(\\w+)>";
 NSUInteger const krProtocol_name            = 1;
 /// Find interface-conformed protocols in file
-NSString * const krConformedProtocols       = @"@interface \\w+ : \\w+( <[\\w, ]+>)";
+NSString * const krConformedProtocols       = @"@interface \\w+ ?: ?\\w+ ?<([\\w, ]+)>";
 NSUInteger const krConformedProtocols_value = 1;
+
+NSString * const krImportStatement = @"#import [\"<][\\w./+-]+[>\"]";

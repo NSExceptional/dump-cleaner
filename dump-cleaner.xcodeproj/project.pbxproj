@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		B42B3CD61C965B2700EB64F6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CD51C965B2700EB64F6 /* main.m */; };
 		B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */; };
+		B4BF9FB31CB233AB00975D2A /* NSArray+Transform.m in Sources */ = {isa = PBXBuildFile; fileRef = B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */; };
 		B4E073331C9F80EF0076C94C /* dump-cleaner-constants.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */; };
 		B4E073371C9F83C30076C94C /* DCProperty.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073361C9F83C30076C94C /* DCProperty.m */; };
 		B4E0733A1C9F84EA0076C94C /* DCClass.m in Sources */ = {isa = PBXBuildFile; fileRef = B4E073391C9F84EA0076C94C /* DCClass.m */; };
@@ -34,6 +35,8 @@
 		B42B3CD51C965B2700EB64F6 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Regex.h"; sourceTree = "<group>"; };
 		B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Regex.m"; sourceTree = "<group>"; };
+		B4BF9FB11CB233AB00975D2A /* NSArray+Transform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+Transform.h"; sourceTree = "<group>"; };
+		B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+Transform.m"; sourceTree = "<group>"; };
 		B4E073301C9F7F510076C94C /* dump-cleaner-prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "dump-cleaner-prefix.pch"; sourceTree = "<group>"; };
 		B4E073311C9F80EF0076C94C /* dump-cleaner-constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "dump-cleaner-constants.h"; sourceTree = "<group>"; };
 		B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "dump-cleaner-constants.m"; sourceTree = "<group>"; };
@@ -85,6 +88,8 @@
 				B4E073301C9F7F510076C94C /* dump-cleaner-prefix.pch */,
 				B4E073311C9F80EF0076C94C /* dump-cleaner-constants.h */,
 				B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */,
+				B4BF9FB11CB233AB00975D2A /* NSArray+Transform.h */,
+				B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */,
 				B4E073341C9F83940076C94C /* Classes */,
 			);
 			path = "dump-cleaner";
@@ -166,6 +171,7 @@
 				B42B3CD61C965B2700EB64F6 /* main.m in Sources */,
 				B4E0735E1C9FAAE30076C94C /* DCSDK.m in Sources */,
 				B4E073331C9F80EF0076C94C /* dump-cleaner-constants.m in Sources */,
+				B4BF9FB31CB233AB00975D2A /* NSArray+Transform.m in Sources */,
 				B4E0733A1C9F84EA0076C94C /* DCClass.m in Sources */,
 				B4E073611C9FAD3D0076C94C /* DCIVar.m in Sources */,
 				B4E0735B1C9F87A30076C94C /* DCObject.m in Sources */,

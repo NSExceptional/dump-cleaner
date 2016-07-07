@@ -11,7 +11,8 @@
 
 @interface DCClass : DCObject
 
-- (NSArray<NSString*> *)dependenciesGivenClasses:(NSArray<NSString*> *)classes;
+/// @param classes A mapping of [class : path] of all recognized classes.
++ (instancetype)withString:(NSString *)string knownClasses:(NSDictionary *)classes knownStructs:(NSDictionary *)structs;
 
 @property (nonatomic, readonly) NSString *superclassName;
 

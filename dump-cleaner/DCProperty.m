@@ -19,7 +19,9 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
+        // _string is computed at runtime from _value
         _value = string;
+        
         // Whether is object type
         _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute atIndex:0].count > 0;
         self.isObject  = self.alreadyObject;
@@ -40,7 +42,6 @@
         if (![string allMatchesForRegex:krPropertyIsReadonly atIndex:0]) {
             _setterRegex = [NSString stringWithFormat:@"- ?\\(void\\)%@\\(%@\\)\\w+;", setter, type];
         }
-        
     }
     
     return self;

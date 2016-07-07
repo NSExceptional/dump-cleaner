@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "dump-cleaner-constants.h"
 #import "NSString+Regex.h"
+#import "NSArray+Transform.h"
 
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }

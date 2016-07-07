@@ -44,3 +44,5 @@ extern NSString * const krProtocol;
 extern NSUInteger const krProtocol_name;
 extern NSString * const krConformedProtocols;
 extern NSUInteger const krConformedProtocols_value;
+
+extern NSString * const krImportStatement;
