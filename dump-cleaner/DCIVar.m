@@ -19,10 +19,21 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
-        _string = string;
         _name = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_name].firstObject;
         _type = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_type].firstObject;
+        // Replace `Type*` with `Type *`
+        // TODO stronger space enforcement (i.e. remove multiple spaces with regex)
+        if ([_type hasSuffix:@"*"] && ![_type hasSuffix:@" *"]) {
+            _type = [_type stringByReplacingOccurrencesOfString:@"*" withString:@" *"];
+        }
+        
         NSParameterAssert(_name && _type);
+        
+        if ([_type hasSuffix:@"*"]) {
+            _string = [NSString stringWithFormat:@"    %@%@;", _type, _name];
+        } else {
+            _string = [NSString stringWithFormat:@"    %@ %@;", _type, _name];
+        }
     }
     
     return self;
@@ -40,9 +51,13 @@
 }
 
 + (BOOL)test {
-    DCIVar *ivar = [DCIVar withString:@"    NSString * _name;\n"];
+    DCIVar *ivar = [DCIVar withString:@"    NSString* _name;\n"];
     DCAssertEqualObjects(@"_name", ivar.name);
     DCAssertEqualObjects(@"NSString *", ivar.type);
+    
+    ivar = [DCIVar withString:@"    NSArray<NSString *> *_things;\n"];
+    DCAssertEqualObjects(@"_things", ivar.name);
+    DCAssertEqualObjects(@"NSArray<NSString *> *", ivar.type);
     
     return YES;
 }

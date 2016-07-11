@@ -12,7 +12,7 @@
 NSString * const kUsage = @"Usage: dumpcleaner [-fxrv] [-s path] <directory|file>\n\t-s\t<path>\tSpecify the path to the SDK to use\n\t-f\tSpecify a single file to clean instead of a directory\n\t-x\tDon\'t use an SDK, just sanitize using the headers in the current directory\n\t-r\tRecursive\n\t-v\tVerbose\n";
 
 /// Find structs in file
-NSString * const krStruct      = @"struct (%@) \\{(?:\\s*\\w+ \\w+;)+\\s*\\}";
+NSString * const krStruct      = @"(?:typedef )?struct (%@) \\{(?:\\s*\\w+ ? ?\\*? ?\\w+;)+\\s*\\}(?: \\w+)?;";
 NSUInteger const krStruct_type = 1;
 /// Find empty structs in file
 NSString * const krEmptyStruct      = @"struct (\\w+) *\\{ *\\}";

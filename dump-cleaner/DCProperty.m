@@ -19,7 +19,7 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
-        // _string is computed at runtime from _value
+        // _string is lazily computed at runtime from _value in getter
         _value = string;
         
         // Whether is object type
@@ -30,7 +30,6 @@
         NSString *type = [string allMatchesForRegex:krProperty atIndex:krProperty_type].firstObject;
         NSString *name = [string allMatchesForRegex:krProperty atIndex:krProperty_name].firstObject;
         _ivar = [DCIVar withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
-        NSParameterAssert(name && type);
         
         // Getter and setter
         NSString *getter = [string allMatchesForRegex:krPropertyGetter atIndex:krPropertyGetter_name].firstObject ?: name;

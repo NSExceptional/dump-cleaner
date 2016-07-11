@@ -10,15 +10,18 @@
 
 
 @interface DCObject : NSObject {
-    @protected
+@protected
     NSString *_string;
 }
 
+/// Subclasses should not override
 + (instancetype)withString:(NSString *)string;
-/// Subclasses should not call super
+/// Subclasses should implement, no call to super
 - (id)initWithString:(NSString *)string;
+/// Subclasses should override for testing
 + (BOOL)test;
 
+/// Subclasses should override backed value to return the desired result
 @property (nonatomic, readonly) NSString *string;
 
 @end

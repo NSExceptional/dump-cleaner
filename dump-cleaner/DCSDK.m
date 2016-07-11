@@ -13,6 +13,7 @@
 @property (nonatomic, readonly) NSString *sdkPath;
 @property (nonatomic, readonly) NSString *frameworksPath;
 @property (nonatomic, readonly) NSMutableDictionary *knownClasses;
+@property (nonatomic, readonly) NSArray *knownStructs;
 @end
 
 @implementation DCSDK
