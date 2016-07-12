@@ -10,9 +10,10 @@
 
 
 @interface DCSDK ()
-@property (nonatomic, readonly) NSString *sdkPath;
+@property (nonatomic, readonly) NSString *SDKPath;
 @property (nonatomic, readonly) NSString *frameworksPath;
 @property (nonatomic, readonly) NSMutableDictionary *knownClasses;
+@property (nonatomic, readonly) NSMutableDictionary *knownProtocols;
 @property (nonatomic, readonly) NSArray *knownStructs;
 @end
 
@@ -27,8 +28,8 @@
 - (id)initWithPath:(NSString *)path {
     self = [super init];
     if (self) {
-        _sdkPath = path;
-        _frameworksPath = [self.sdkPath stringByAppendingPathComponent:@"System/Library/Frameworks"];
+        _SDKPath = path;
+        _frameworksPath = [self.SDKPath stringByAppendingPathComponent:@"System/Library/Frameworks"];
         _knownClasses = [NSMutableDictionary dictionary];
         
         // Assert that SDK exists
@@ -62,3 +63,27 @@
 }
 
 @end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
