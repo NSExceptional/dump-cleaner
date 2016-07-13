@@ -11,6 +11,6 @@
 
 @interface NSArray<ObjectType> (Transform)
 
-- (NSArray *)arrayByTransformingWithBlock:(id(^)(ObjectType object, NSUInteger idx, BOOL *discard))transform;
+- (NSArray *)map:(id(^)(ObjectType object, NSUInteger idx, BOOL *discard))transform;
 
 @end

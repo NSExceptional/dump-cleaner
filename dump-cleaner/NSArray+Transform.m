@@ -11,7 +11,7 @@
 
 @implementation NSArray (Transform)
 
-- (NSArray *)arrayByTransformingWithBlock:(id(^)(id object, NSUInteger idx, BOOL *discard))transform {
+- (NSArray *)map:(id(^)(id object, NSUInteger idx, BOOL *discard))transform {
     NSParameterAssert(transform);
     
     NSMutableArray *array = [NSMutableArray array];

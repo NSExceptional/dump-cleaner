@@ -29,16 +29,15 @@
     return [self substringWithRange:[match rangeAtIndex:idx]];
 }
 
-- (NSArray *)matchesForRegex:(NSString *)pattern {
+- (NSArray<NSTextCheckingResult*> *)matchesForRegex:(NSString *)pattern {
     NSError *error = nil;
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:&error];
-    if (error)
+    if (error) {
         return nil;
-    NSArray *matches = [regex matchesInString:self options:0 range:NSMakeRange(0, self.length)];
-    if (matches.count == 0)
-        return nil;
+    }
     
-    return matches;
+    NSArray *matches = [regex matchesInString:self options:0 range:NSMakeRange(0, self.length)];
+    return matches.count == 0 ? nil : matches;
 }
 
 - (NSArray *)allMatchesForRegex:(NSString *)regex atIndex:(NSUInteger)idx {
