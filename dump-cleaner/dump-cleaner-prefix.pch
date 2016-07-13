@@ -24,3 +24,6 @@
 #define DCAssertEqualObjects(a, b) DCAssert([a isEqual:b])
 #define DCAssertNotNil(a) DCAssert(a != nil)
 #define DCAssertNil(a) DCAssert(a == nil)
+
+#define DCExitOnError(error) if (error) { printf("%s", error.localizedDescription.UTF8String); exit(1); }
+#define DCExitWithMessage(...) printf("%s", [NSString stringWithFormat:__VA_ARGS__].UTF8String); exit(1)
