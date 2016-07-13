@@ -42,12 +42,12 @@ NSUInteger const krProtocol_name = 1;
 #pragma mark - Structs
 // Find unknown structs
 // Assumes: structs will not contain any objects said to conform to a protocol or with any special keywords
-NSString * const krStructUnknown_1_2     = @"(?:typedef )?struct (\\w+) \\{(?:\\W*\\w+(?: \\w+)?(?: ?\\* ?| )\\w+ ?;)+\\W*\\}(?: (\\w+))? ?;";
+NSString * const krStructUnknown_1_2     = @"(?:typedef )?struct (\\w+) \\{(?:\\s*\\w+(?: \\w+)?(?: ?\\* ?| )\\w+ ?(?:: ?\\d)?;)+\\s*\\}(?: (\\w+))? ?;";
 NSUInteger const krStructUnknown_type    = 1;
 NSUInteger const krStructUnknown_typedef = 2;
 
 /// Replacing expanded structs by name
-NSString * const krStructKnown = @"struct (%@) \\{(?:\\W*\\w+(?: \\w+)?(?: ?\\* ?| )[\\w\\d]+ ?;)+\\W*\\} ?;";
+NSString * const krStructKnown = @"struct (%@) \\{(?:\\s*\\w+(?: \\w+)?(?: ?\\* ?| )[\\w\\d]+ ?(?:: ?\\d)?;)+\\s*\\} ?;";
 
 /// Find empty structs in file
 NSString * const krEmptyStruct_1    = @"struct (\\w+) *\\{ *\\}";
@@ -85,7 +85,7 @@ NSString * const krIvarsPresent_1     = @"@interface \\w+ : \\w+ <(?:\\w+(?:, )?
 NSUInteger const krIvarsPresent_ivars = 1;
 
 /// Grab parts of each ivar given a string of ivars grabbed using the krIvarsPresent_1 regex
-NSString * const krIvarComponents_12 = @"\\s+((?:(?:(?:\\w+ )?\\w+)+|\\w+<[\\w, ]+>|struct \\{(?:\\W*\\w+(?: \\w+)?(?: ?\\* ?| )[\\w\\d]+ ?;)+\\W*\\})(?: ?\\*)?) ?(?<= |\\*|>|})([\\w\\d]+) ?;";
+NSString * const krIvarComponents_12 = @"\\s+((?:(?:(?:\\w+ )?\\w+)+|\\w+<[\\w, ]+>|struct \\{(?:\\s*\\w+(?: \\w+)?(?: ?\\* ?| )[\\w\\d]+ ?(?:: ?\\d)?;)+\\s*\\})(?: ?\\*)?) ?(?<= |\\*|>|})([\\w\\d]+) ?;";
 NSUInteger const krIvarComponents_type = 1;
 NSUInteger const krIvarComponents_name = 2;
 
