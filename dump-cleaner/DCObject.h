@@ -16,7 +16,7 @@
 
 /// Subclasses should not override
 + (instancetype)withString:(NSString *)string;
-/// Subclasses should implement, no call to super
+/// Subclasses should implement or provide additional init, no call to super
 - (id)initWithString:(NSString *)string;
 /// Subclasses should override for testing
 + (BOOL)test;

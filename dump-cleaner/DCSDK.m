@@ -7,6 +7,8 @@
 //
 
 #import "DCSDK.h"
+#import "DCClass.h"
+#import "DCProtocol.h"
 
 
 @interface DCSDK ()

@@ -12,8 +12,7 @@
 
 @interface DCClass ()
 
-@property (nonatomic, copy) NSDictionary *knownClasses;
-@property (nonatomic, copy) NSDictionary *knownStructs;
+@property (nonatomic, readonly) NSString *categoryName;
 @property (nonatomic) NSMutableArray<NSString  *> *imports;
 @property (nonatomic) NSMutableArray<NSString  *> *protocols;
 @property (nonatomic) NSMutableArray<NSString  *> *conformedProtocols;
@@ -25,18 +24,20 @@
 @end
 
 @implementation DCClass
+@synthesize name = _name;
 
-+ (instancetype)withString:(NSString *)string knownClasses:(NSDictionary *)classes knownStructs:(NSDictionary *)structs {
-    return [[self alloc] initWithString:string knownClasses:classes knownStructs:structs];
++ (instancetype)withString:(NSString *)string categoryName:(NSString *)name {
+    return [[self alloc] initWithString:string categoryName:name];
 }
 
-- (id)initWithString:(NSString *)string knownClasses:(NSDictionary *)classes knownStructs:(NSDictionary *)structs {
+- (id)initWithString:(NSString *)string categoryName:(NSString *)name {
     self = [super init];
     if (self) {
         _string = string;
-        self.knownClasses = classes;
-        self.knownStructs = structs;
-
+        _categoryName = name;
+        
+        _name = [string matchGroupAtIndex:krClass_Name forRegex:krClass_123];
+        
         self.imports            = [NSMutableArray array];
         self.protocols          = [NSMutableArray array];
         self.conformedProtocols = [NSMutableArray array];
