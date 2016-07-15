@@ -13,4 +13,6 @@
 
 - (NSArray *)map:(id(^)(ObjectType object, NSUInteger idx, BOOL *discard))transform;
 
+@property (nonatomic, readonly) NSArray *flattened;
+
 @end

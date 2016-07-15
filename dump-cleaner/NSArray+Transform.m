@@ -29,4 +29,8 @@
     return array.copy;
 }
 
+- (NSArray *)flattened {
+    return [self valueForKeyPath:@"@unionOfOfArrays.self"];
+}
+
 @end
