@@ -11,6 +11,7 @@
 
 extern NSString * const kUsage;
 extern NSString * const krImportStatement;
+extern NSString * const kUmbrellaHeaderHeader;
 
 #pragma mark - Classes, categories, protocols -
 

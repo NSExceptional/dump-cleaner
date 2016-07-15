@@ -10,6 +10,7 @@
 #import "dump-cleaner-constants.h"
 #import "NSString+Regex.h"
 #import "NSArray+Transform.h"
+#import "NSFileManager+SubdirectoryContents.h"
 
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
@@ -25,5 +26,11 @@
 #define DCAssertNotNil(a) DCAssert(a != nil)
 #define DCAssertNil(a) DCAssert(a == nil)
 
-#define DCExitOnError(error) if (error) { printf("%s", error.localizedDescription.UTF8String); exit(1); }
-#define DCExitWithMessage(...) printf("%s", [NSString stringWithFormat:__VA_ARGS__].UTF8String); exit(1)
+#define DCTabbedFormat(...) [@"\t" stringByAppendingString:[NSString stringWithFormat:__VA_ARGS__]]
+#define DCTabbedMessage(message) [@"\t" stringByAppendingString:message]
+
+#define DCExitOnError(error) if (error) { printf("%s", DCTabbedMessage(error.localizedDescription).UTF8String); exit(1); }
+#define DCExitWithMessage(...) printf("%s", DCTabbedFormat(__VA_ARGS__).UTF8String); exit(1)
+#define DCWriteError(error) if (error) { printf("%s", DCTabbedMessage(error.localizedDescription).UTF8String); }
+#define DCWriteMessage(...) printf("%s", DCTabbedFormat(__VA_ARGS__).UTF8String)
+
