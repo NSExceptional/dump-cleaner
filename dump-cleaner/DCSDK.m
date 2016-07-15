@@ -66,10 +66,118 @@ typedef void (^DCStructBlock)(NSString *structName);
 #pragma mark Public interface
 
 - (void)processFrameworksInDirectory:(NSString *)frameworksFolder andOutputTo:(NSString *)outputDirectory {
+    NSFileManager *manager = [NSFileManager defaultManager];
+    NSError *error = nil;
+    NSArray *frameworks = [manager contentsOfDirectoryAtPath:frameworksFolder error:&error];
     
+    DCExitOnError(error);
+    
+    NSMutableDictionary *frameworksToNewNames = [NSMutableDictionary dictionary];
+    NSMutableDictionary *newNamesToPaths      = [NSMutableDictionary dictionary];
+    
+    // Process all dumped frameworks //
+    
+    // framework = "Framework.framework"
+    for (NSString *framework in frameworks) {
+        NSString *frameworkPath = [frameworksFolder stringByAppendingPathComponent:framework];
+        
+        // TODO test this shit
+        // Get headers in the given framework folder
+        NSArray *headers = [[manager filesInDirectoryAtPath:frameworkPath recursive:YES] map:^id(NSString *item, NSUInteger idx, BOOL *discard) {
+            *discard = ![item hasSuffix:@".h"];
+            return item;
+        }];
+        
+        // output = ".../outdir/Cleaned/FrameworkPrivate.framework/Headers/"
+        NSString *newFrameworkName = [framework stringByReplacingOccurrencesOfString:@".framework" withString:@"Private"];
+        NSString *output = [outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"/Cleaned/%@.framework/Headers/", newFrameworkName]];
+        [self processFilesAtPaths:headers andSetOutputLocation:output];
+        
+        frameworksToNewNames[framework] = newFrameworkName;
+        newNamesToPaths[newFrameworkName] = output;
+    }
+    
+    // Write cleaned headers to output directory, write umbrella headers to each directory //
+    
+    [self updateAndWriteAllDumpedInterfaces];
+    
+    for (NSString *framework in frameworks) {
+        NSString *name   = frameworksToNewNames[framework];
+        NSString *outdir = newNamesToPaths[name];
+        
+        [self generateUmbrellaHeadersForOutputDirectory:outdir frameworkName:name];
+    }
 }
 
-#pragma mark Private
+#pragma mark - Private -
+
+#pragma mark Workflow
+
+- (void)processFilesAtPaths:(NSArray<NSString*> *)paths andSetOutputLocation:(NSString *)directory {
+    if (!paths.count) return;
+    
+    // Collect all dumped header contents
+    for (NSString *path in paths)
+        [self processDumpedHeader:path];
+    
+    // Create output folder
+    NSError *error = nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:&error];
+    DCExitOnError(error);
+    
+    // Set output folder for each dumped thing
+    for (NSArray *array in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols])
+        for (DCObject<DCInterface> *thing in array)
+            [thing setOutputDirectory:directory];
+}
+
+- (void)updateAndWriteAllDumpedInterfaces {
+    // Remove duplicate structs
+    NSMutableSet *filteredDumps = self.dumpedStructs.mutableCopy;
+    [filteredDumps minusSet:self.SDKStructs];
+    _dumpedStructs = filteredDumps;
+    
+    NSArray *allStructs = @[self.SDKStructs.allObjects, self.dumpedStructs.allObjects].flattened;
+    for (DCObject<DCInterface> *thing in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols].flattened) {
+        [thing updateWithKnownClasses:self.SDKClasses.allValues];
+        [thing updateWithKnownClasses:self.dumpedClasses.allValues];
+        [thing updateWithKnownProtocols:self.SDKProtocols.allValues];
+        [thing updateWithKnownProtocols:self.dumpedProtocols.allValues];
+        [thing updateWithKnownStructs:allStructs];
+        
+        // Actually write
+        NSError *error = nil;
+        [thing.string writeToFile:thing.outputFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        DCWriteError(error);
+    }
+}
+
+- (void)generateUmbrellaHeadersForOutputDirectory:(NSString *)headersFolder frameworkName:(NSString *)frameworkName {
+    NSParameterAssert(headersFolder); NSParameterAssert(frameworkName);
+    
+    // Get all existing headers
+    NSError *error = nil;
+    NSArray *newHeaders = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:headersFolder error:&error];
+    DCExitOnError(error);
+    
+    // Transform header files to import statements
+    NSArray *imports = [newHeaders map:^id(NSString *file, NSUInteger idx, BOOL *discard) {
+        return [NSString stringWithFormat:@"#import <%@/%@>\n", frameworkName, file];
+    }];
+    
+    // Build umbrella content
+    NSMutableString *umbrella = [NSMutableString stringWithFormat:kUmbrellaHeaderHeader, frameworkName];
+    for (NSString *import in imports)
+        [umbrella appendString:import];
+    [umbrella appendString:@"\n"];
+    
+    // Write it to ".../FrameworkPrivate.framework/Headers/FrameworkPrivate.h"
+    NSString *outfile = [headersFolder stringByAppendingPathComponent:[frameworkName stringByAppendingString:@".h"]];
+    [umbrella writeToFile:outfile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    DCExitOnError(error);
+}
+
+#pragma mark Processing
 
 - (void)findThingsInSDK {
     NSFileManager *manager = [NSFileManager defaultManager];
