@@ -13,6 +13,6 @@
 
 + (instancetype)SDKAtPath:(NSString *)path;
 
-- (void)processFilesAtPaths:(NSArray<NSString*> *)paths;
+- (void)processFrameworksInDirectory:(NSString *)frameworksFolder andOutputTo:(NSString *)outputDirectory;
 
 @end
