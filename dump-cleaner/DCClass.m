@@ -8,35 +8,40 @@
 
 #import "DCClass.h"
 #import "DCProperty.h"
+#import "DCProtocol.h"
 
 
 @interface DCClass ()
 
-@property (nonatomic, readonly) NSString *categoryName;
 @property (nonatomic) NSMutableArray<NSString  *> *imports;
 @property (nonatomic) NSMutableArray<NSString  *> *protocols;
 @property (nonatomic) NSMutableArray<NSString  *> *conformedProtocols;
 @property (nonatomic) NSMutableArray<DCProperty*> *properties;
 @property (nonatomic) NSMutableArray<NSString  *> *ivars;
 @property (nonatomic) NSMutableArray<NSString  *> *methods;
-@property (nonatomic, readonly) NSString<NSPortDelegate> *stringg;
 
 @end
 
 @implementation DCClass
-@synthesize name = _name;
 
-+ (instancetype)withString:(NSString *)string categoryName:(NSString *)name {
-    return [[self alloc] initWithString:string categoryName:name];
+#pragma mark Initializers
+
++ (instancetype)withString:(NSString *)string {
+    return [[self alloc] initWithString:string];
 }
 
-- (id)initWithString:(NSString *)string categoryName:(NSString *)name {
++ (instancetype)withString:(NSString *)string categoryName:(NSString *)categoryName {
+    DCClass *class = [self withString:string];
+    class->_categoryName = categoryName;
+    return class;
+}
+
+- (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
-        _string = string;
-        _categoryName = name;
-        
-        _name = [string matchGroupAtIndex:krClass_Name forRegex:krClass_123];
+        _string       = string.mutableCopy;
+        _name         = [string matchGroupAtIndex:krClass_Name    forRegex:krClass_123];
+        _categoryName = [string matchGroupAtIndex:krCategory_Name forRegex:krCategory_12];
         
         self.imports            = [NSMutableArray array];
         self.protocols          = [NSMutableArray array];
@@ -44,8 +49,6 @@
         self.properties         = [NSMutableArray array];
         self.ivars              = [NSMutableArray array];
         self.methods            = [NSMutableArray array];
-        
-        [self makeRepairs];
         
         [self findProperties];
         [self findIVars];
@@ -57,6 +60,52 @@
     
     return self;
 }
+
+#pragma mark Public interface
+
+- (NSString *)outputFile {
+    if (_outputDirectory) {
+        if (self.categoryName) {
+            return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@+%@.h", self.name, self.categoryName]];
+        }
+        
+        return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.h", self.name]];
+    }
+    
+    return nil;
+}
+
+#pragma mark Internal
+
+- (NSString *)categoryKey { return self.categoryName ? [self.name stringByAppendingString:self.categoryName] : nil; }
+
+- (BOOL)isEqual:(id)object {
+    if ([object isKindOfClass:[self class]])
+        return [self isEqualToDCClass:object];
+    
+    return [super isEqual:object];
+}
+
+- (BOOL)isEqualToDCClass:(DCClass *)class {
+    NSString *myKey = self.categoryKey;
+    NSString *otherKey = class.categoryKey;
+    
+    if (myKey && otherKey) {
+        return [myKey isEqualToString:otherKey];
+    } else if (!myKey && !otherKey) {
+        return [_name isEqualToString:class.name];
+    }
+    
+    return NO;
+}
+
+- (NSUInteger)hash { return _categoryName ? self.categoryKey.hash : _name.hash; }
+
+#pragma mark Processing
+
+- (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes;
+- (void)updateWithKnownStructs:(NSArray *)structNames;
+- (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols;
 
 - (void)makeRepairs {
     

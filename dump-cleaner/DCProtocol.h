@@ -6,9 +6,10 @@
 //  Copyright © 2016 Tanner Bennett. All rights reserved.
 //
 
-#import "DCObject.h"
+#import "DCInterface.h"
 
-@interface DCProtocol : DCObject
+
+@interface DCProtocol : DCObject <DCInterface>
 
 @property (nonatomic, readonly) NSString *name;
 

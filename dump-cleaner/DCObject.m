@@ -10,11 +10,12 @@
 
 
 @implementation DCObject
-@synthesize string = _string;
 
 + (instancetype)withString:(NSString *)string {
     return [[self alloc] initWithString:string];
 }
+
+- (NSString *)string { return _string.copy; }
 
 - (id)initWithString:(NSString *)string { return nil; }
 

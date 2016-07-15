@@ -11,7 +11,8 @@
 
 @interface DCObject : NSObject {
 @protected
-    NSString *_string;
+    NSMutableString *_string;
+    NSString *_outputDirectory;
 }
 
 /// Subclasses should not override
