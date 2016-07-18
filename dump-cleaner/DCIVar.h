@@ -10,4 +10,10 @@
 
 @interface DCIVar : DCObject
 
+@property (nonatomic, readonly) NSString *name;
+@property (nonatomic, readonly) NSString *type;
+@property (nonatomic, readonly) BOOL isPointer;
+
+- (void)updateWithKnownStructs:(NSArray *)structNames;
+
 @end
