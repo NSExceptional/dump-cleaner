@@ -20,6 +20,7 @@
 
 @property (nonatomic, readonly) NSString *name;
 @property (nonatomic, readonly) NSString *outputFile;
+@property (nonatomic, readonly) NSString *importStatement;
 
 - (void)setOutputDirectory:(NSString *)outputDirectory;
 
