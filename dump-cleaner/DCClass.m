@@ -99,49 +99,80 @@
 
 #pragma mark Processing
 
-- (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes;
-- (void)updateWithKnownStructs:(NSArray *)structNames;
-- (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols;
-
-- (void)makeRepairs {
+- (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes {
+    NSSet *classNames = [NSSet setWithArray:[classes valueForKeyPath:@"@unionOfObjects.name"]];
+    NSArray *nonObjectProperties = [self.properties map:^id(DCProperty *property, NSUInteger idx, BOOL *discard) {
+        *discard = property.isObject || !property.ivar.isPointer;
+        return property;
+    }];
     
+    // Update object properties
+    for (DCProperty *property in nonObjectProperties) {
+        BOOL isObject = [classNames containsObject:property.rawType];
+        property.isObject = isObject;
+        
+        // Add class dependency
+        if (isObject) {
+            for (DCClass *class in classes) {
+                if ([class.name isEqualToString:property.rawType]) {
+                    [self.dependingClasses addObject:class];
+                    break;
+                }
+            }
+        }
+    }
 }
 
-- (void)findImports {
-    [self.imports addObjectsFromArray:[self.string allMatchesForRegex:krImportStatement atIndex:0]];
+- (void)updateWithKnownStructs:(NSArray *)structNames {
+    for (DCProperty *property in self.properties)
+        [property updateWithKnownStructs:structNames];
+    for (DCIVar *ivar in self.ivars)
+        [ivar updateWithKnownStructs:structNames];
+}
+
+- (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols {
+    NSMutableSet *dependencies = [NSMutableSet setWithArray:protocols];
+    [dependencies intersectSet:self.protocols];
+    [self.protocols minusSet:dependencies];
+    self.dependingProtocols = dependencies.allObjects.mutableCopy;
+}
+
+#pragma mark Searching
+
+- (void)findIVars {
+    self.ivars = [[self.string allMatchesForRegex:krIvarComponents_12 atIndex:0] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        return [DCIVar withString:object];
+    }].mutableCopy;
 }
 
 - (void)findProtocols {
-    [self.conformedProtocols addObjectsFromArray:[self.string allMatchesForRegex:krProtocol atIndex:krProtocol_name]];
-    [self.protocols addObjectsFromArray:self.conformedProtocols];
-    [self.protocols addObjectsFromArray:[self.string allMatchesForRegex:krConformedProtocols atIndex:krConformedProtocols_value]];
+    self.conformedProtocols = [self.string allMatchesForRegex:krClass_123 atIndex:krClass_conformed];
+    [self.protocols addObjectsFromArray:[self.string allMatchesForRegex:krProtocolType_1 atIndex:krProtocolType_protocol]];
 }
 
 - (void)findProperties {
-    NSArray *properties = [[self.string allMatchesForRegex:krProperty atIndex:0] arrayByTransformingWithBlock:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+    self.properties = [[self.string allMatchesForRegex:krProperty_12 atIndex:0] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
         return [DCProperty withString:object];
-    }];
-    
-    [self.properties addObjectsFromArray:properties];
-}
-
-- (void)findIVars {
-    NSArray *ivars = [[self.string allMatchesForRegex:krIvarComponents atIndex:0] arrayByTransformingWithBlock:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        return [DCIVar withString:object];
-    }];
-    
-    [self.ivars addObjectsFromArray:ivars];
+    }].mutableCopy;
 }
 
 - (void)findMethods {
-    NSArray *methods = [[self.string allMatchesForRegex:kr atIndex:<#(NSUInteger)#>]]
+    
 }
 
 - (void)removePropertyBackingIVars {
     
 }
 
-- (void)addDependenciesToImports {
+- (void)removePropertyMethods {
+    
+}
+
+- (void)removeNSObjectMethodsAndProperties {
+    
+}
+
+- (void)removeSuperclassMethods {
     
 }
 
