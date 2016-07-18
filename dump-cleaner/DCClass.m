@@ -13,12 +13,15 @@
 
 @interface DCClass ()
 
-@property (nonatomic) NSMutableArray<NSString  *> *imports;
-@property (nonatomic) NSMutableArray<NSString  *> *protocols;
-@property (nonatomic) NSMutableArray<NSString  *> *conformedProtocols;
+@property (nonatomic) NSMutableSet<NSString*>     *protocols;
+@property (nonatomic) NSMutableSet<NSString*>     *classes;
+@property (nonatomic) NSArray<NSString*>          *conformedProtocols;
 @property (nonatomic) NSMutableArray<DCProperty*> *properties;
-@property (nonatomic) NSMutableArray<NSString  *> *ivars;
-@property (nonatomic) NSMutableArray<NSString  *> *methods;
+@property (nonatomic) NSMutableArray<NSString*>   *ivars;
+@property (nonatomic) NSMutableArray<NSString*>   *methods;
+
+@property (nonatomic) NSMutableSet<DCClass*>    *dependingClasses;
+@property (nonatomic) NSMutableSet<DCProtocol*> *dependingProtocols;
 
 @end
 
@@ -46,19 +49,9 @@
             _superclassName = [string matchGroupAtIndex:krClass_superclass forRegex:krClass_123];
         }
         
-        self.imports            = [NSMutableArray array];
-        self.protocols          = [NSMutableArray array];
-        self.conformedProtocols = [NSMutableArray array];
-        self.properties         = [NSMutableArray array];
-        self.ivars              = [NSMutableArray array];
-        self.methods            = [NSMutableArray array];
-        
-        [self findProperties];
-        [self findIVars];
-        [self findMethods];
-        [self findImports];
-        [self removePropertyBackingIVars];
-        [self addDependenciesToImports];
+        self.protocols          = [NSMutableSet set];
+        self.dependingClasses   = [NSMutableSet set];
+        self.dependingProtocols = [NSMutableSet set];
     }
     
     return self;
