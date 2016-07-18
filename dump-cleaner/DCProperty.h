@@ -23,4 +23,6 @@
 /// Used to find and remove instances of the backing ivar
 @property (nonatomic, readonly) DCIVar *ivar;
 
+- (void)updateWithKnownStructs:(NSArray *)structNames;
+
 @end

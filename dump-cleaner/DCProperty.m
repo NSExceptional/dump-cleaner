@@ -54,28 +54,21 @@
 
 - (NSString *)string {
     if (!_string) {
-        NSMutableString *string = self.value.mutableCopy;
-        [string replaceOccurrencesOfString:@"@property ?\\( ?" withString:@"@property (" options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
-        [string replaceOccurrencesOfString:@" ?, ?" withString:@", " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
-        [string replaceOccurrencesOfString:@" ?\\) ?" withString:@") " options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
-        [string replaceOccurrencesOfString:@" ?\\* ?" withString:@" *" options:NSRegularExpressionSearch range:NSMakeRange(0, string.length)];
+        _string = self.value.mutableCopy;
+        [_string replaceOccurrencesOfString:@"@property ?\\( ?" withString:@"@property (" options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
+        [_string replaceOccurrencesOfString:@" ?, ?" withString:@", " options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
+        [_string replaceOccurrencesOfString:@" ?\\) ?" withString:@") " options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
+        [_string replaceOccurrencesOfString:@" ?\\* ?" withString:@" *" options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
         if (self.isObject && !self.alreadyObject) {
-            if ([string containsString:@"("]) {
-                [string replaceOccurrencesOfString:@"(" withString:@"(retain, " options:0 range:NSMakeRange(0, string.length)];
+            if ([_string containsString:@"("]) {
+                [_string replaceOccurrencesOfString:@"(" withString:@"(retain, " options:0 range:NSMakeRange(0, _string.length)];
             } else {
-                [string replaceOccurrencesOfString:@"@property " withString:@"@property (retain) " options:0 range:NSMakeRange(0, string.length)];
+                [_string replaceOccurrencesOfString:@"@property " withString:@"@property (retain) " options:0 range:NSMakeRange(0, _string.length)];
             }
         }
-        _string = string.copy;
     }
     
     return _string;
-}
-
-- (void)setIsObject:(BOOL)isObject {
-    if (isObject == _isObject || self.alreadyObject) return;
-    _isObject = isObject;
-    _string = nil;
 }
 
 #pragma mark Tests
@@ -96,6 +89,18 @@
     DCAssertEqualObjects(p.value, p.string);
     
     return YES;
+}
+
+#pragma mark Public interface
+
+- (void)setIsObject:(BOOL)isObject {
+    if (isObject == _isObject || self.alreadyObject) return;
+    _isObject = isObject;
+    _string = nil;
+}
+
+- (void)updateWithKnownStructs:(NSArray *)structNames {
+#warning Incomplete
 }
 
 @end
