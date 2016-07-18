@@ -19,8 +19,9 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
-        _name = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_name].firstObject;
-        _type = [string allMatchesForRegex:krIvarComponents atIndex:krIvarComponents_type].firstObject;
+        _name = [string allMatchesForRegex:krIvarComponents_12 atIndex:krIvarComponents_name].firstObject;
+        _type = [string allMatchesForRegex:krIvarComponents_12 atIndex:krIvarComponents_type].firstObject;
+        
         // Replace `Type*` with `Type *`
         // TODO stronger space enforcement (i.e. remove multiple spaces with regex)
         if ([_type hasSuffix:@"*"] && ![_type hasSuffix:@" *"]) {

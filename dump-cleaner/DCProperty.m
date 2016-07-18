@@ -23,19 +23,25 @@
         _value = string;
         
         // Whether is object type
-        _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute atIndex:0].count > 0;
+        _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute_1 atIndex:0].count > 0;
         self.isObject  = self.alreadyObject;
         
         // Type and name = ivar
-        NSString *type = [string allMatchesForRegex:krProperty atIndex:krProperty_type].firstObject;
-        NSString *name = [string allMatchesForRegex:krProperty atIndex:krProperty_name].firstObject;
+        NSString *type = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_type].firstObject;
+        NSString *name = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_name].firstObject;
         _ivar = [DCIVar withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
         
         // Getter and setter
-        NSString *getter = [string allMatchesForRegex:krPropertyGetter atIndex:krPropertyGetter_name].firstObject ?: name;
-        NSString *setter = [string allMatchesForRegex:krPropertySetter atIndex:krPropertySetter_name].firstObject ?: [NSString stringWithFormat:@"set%@:", name.pascalCaseString];
+        NSString *getter = [string allMatchesForRegex:krPropertyGetter_1 atIndex:krPropertyGetter_name].firstObject;
+        NSString *setter = [string allMatchesForRegex:krPropertySetter_1 atIndex:krPropertySetter_name].firstObject;
+        getter = getter ?: name;
+        setter = setter ?: [NSString stringWithFormat:@"set%@:", name.pascalCaseString];
+        
         _rawType = [string stringByReplacingOccurrencesOfString:@" ?\\* ?" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, type.length)];
-        if (self.isObject) { type = @"id"; }
+        if (self.isObject) {
+            type = @"id";
+        }
+        
         // Readonly?
         _getterRegex = [NSString stringWithFormat:@"- ?\\(%@\\)%@;", type, getter];
         if (![string allMatchesForRegex:krPropertyIsReadonly atIndex:0]) {

@@ -40,8 +40,11 @@
     self = [super init];
     if (self) {
         _string       = string.mutableCopy;
-        _name         = [string matchGroupAtIndex:krClass_Name    forRegex:krClass_123];
-        _categoryName = [string matchGroupAtIndex:krCategory_Name forRegex:krCategory_12];
+        _name         = [string matchGroupAtIndex:krClass_name    forRegex:krClass_123];
+        _categoryName = [string matchGroupAtIndex:krCategory_name forRegex:krCategory_12];
+        if (!_categoryName) {
+            _superclassName = [string matchGroupAtIndex:krClass_superclass forRegex:krClass_123];
+        }
         
         self.imports            = [NSMutableArray array];
         self.protocols          = [NSMutableArray array];

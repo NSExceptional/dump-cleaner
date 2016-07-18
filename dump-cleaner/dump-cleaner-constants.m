@@ -17,27 +17,27 @@ NSString * const kUmbrellaHeaderHeader = @"//\n//  Umbrella header for %@.\n//  
 #pragma mark - Classes, categories, protocols -
 
 #pragma mark Classes
-NSString * const krClassDefinition    = @"@interface \\w+ ?: ?\\w+(?:(?!@end)(?:\\W|.))+@end";
+NSString * const krClassDefinition    = @"@interface \\w+ (?!\\()(?::\\w+)?(?:(?!@end)(?:\\s|.))+@end";
 NSString * const krCategoryDefinition = @"@interface \\w+ ?\\(\\w+\\)(?:(?!@end)(?:\\W|.))+@end";
 NSString * const krClass_123        = @"@interface (\\w+) ?: ?(\\w+)(?: ?<(\\w+(?:, ?\\w+)*)>)?";
-NSUInteger const krClass_Name       = 1;
-NSUInteger const krClass_Superclass = 2;
-NSUInteger const krClass_Conformed  = 3;
+NSUInteger const krClass_name       = 1;
+NSUInteger const krClass_superclass = 2;
+NSUInteger const krClass_conformed  = 3;
 
 #pragma mark Categories
 NSString * const krCategory_12    = @"@interface (\\w+) ?\\(\\w+\\)";
-NSUInteger const krCategory_Class = 2;
-NSUInteger const krCategory_Name  = 2;
+NSUInteger const krCategory_class = 2;
+NSUInteger const krCategory_name  = 2;
 
 #pragma mark Protocols
 NSString * const krProtocolDefinition = @"@protocol \\w+ ?(?:(?!@end)(?:\\W|.))+@end";
 NSString * const krProtocol_12 = @"@protocol (\\w+)(?: ?<(\\w+(?:, ?\\w+)*)>)?";
-NSUInteger const krProtocol_Name      = 1;
-NSUInteger const krProtocol_Conformed = 2;
+NSUInteger const krProtocol_name      = 1;
+NSUInteger const krProtocol_conformed = 2;
 
 /// Find any protocol in file
-NSString * const krProtocol_1    = @"\\w+ ?<(\\w+)>";
-NSUInteger const krProtocol_name = 1;
+NSString * const krProtocolType_1    = @"\\w+ ?<(\\w+(?: ?, ?\\w+)*)>";
+NSUInteger const krProtocolType_protocol = 1;
 
 #pragma mark - Structs
 // Find unknown structs
@@ -70,9 +70,9 @@ NSUInteger const krPropertySetter_name = 1;
 NSString * const krPropertyGetter_1    = @"@property ?(?:\\((?:[\\w,:= ]+, ?)?getter=(\\w+)(?:[\\w,:= ]+)?\\) ?)?";
 NSUInteger const krPropertyGetter_name = 1;
 /// Whether the property contains readonly
-NSString * const krPropertyIsReadonly_1 = @"@property ?\\([\\w,:= ]+readonly[\\w,:= ]*\\)";
+NSString * const krPropertyIsReadonly = @"@property ?\\([\\w,:= ]+readonly[\\w,:= ]*\\)";
 /// Whether the property is a class property
-NSString * const krPropertyIsClass_1 = @"@property ?\\([\\w,:= ]+class[\\w,:= ]*\\)";
+NSString * const krPropertyIsClass = @"@property ?\\([\\w,:= ]+class[\\w,:= ]*\\)";
 /// Whether the property contains retain, copy, assign
 NSString * const krPropertyHasARCAttribute_1 = @"@property ?\\([\\w,:= ]+(copy|assign|retain)[\\w,:= ]*\\)";
 

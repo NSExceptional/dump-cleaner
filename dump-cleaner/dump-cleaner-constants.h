@@ -19,24 +19,24 @@ extern NSString * const kUmbrellaHeaderHeader;
 extern NSString * const krClassDefinition;
 extern NSString * const krCategoryDefinition;
 extern NSString * const krClass_123;
-extern NSUInteger const krClass_Name;
-extern NSUInteger const krClass_Superclass;
-extern NSUInteger const krClass_Conformed;
+extern NSUInteger const krClass_name;
+extern NSUInteger const krClass_superclass;
+extern NSUInteger const krClass_conformed;
 
 #pragma mark Categories
 extern NSString * const krCategory_12;
-extern NSUInteger const krCategory_Class;
-extern NSUInteger const krCategory_Name;
+extern NSUInteger const krCategory_class;
+extern NSUInteger const krCategory_name;
 
 #pragma mark Protocols
 extern NSString * const krProtocolDefinition;
 extern NSString * const krProtocol_12;
-extern NSUInteger const krProtocol_Name;
-extern NSUInteger const krProtocol_Conformed;
+extern NSUInteger const krProtocol_name;
+extern NSUInteger const krProtocol_conformed;
 
 /// Find any protocol in file
-extern NSString * const krProtocol_1;
-extern NSUInteger const krProtocol_name;
+extern NSString * const krProtocolType_1;
+extern NSUInteger const krProtocolType_protocol;
 
 #pragma mark - Structs
 // Find unknown structs
@@ -69,9 +69,9 @@ extern NSUInteger const krPropertySetter_name;
 extern NSString * const krPropertyGetter_1;
 extern NSUInteger const krPropertyGetter_name;
 /// Whether the property contains readonly
-extern NSString * const krPropertyIsReadonly_1;
+extern NSString * const krPropertyIsReadonly;
 /// Whether the property is a class property
-extern NSString * const krPropertyIsClass_1;
+extern NSString * const krPropertyIsClass;
 /// Whether the property contains retain, copy, assign
 extern NSString * const krPropertyHasARCAttribute_1;
 

@@ -11,6 +11,7 @@
 #import "NSString+Regex.h"
 #import "NSArray+Transform.h"
 #import "NSFileManager+SubdirectoryContents.h"
+#import "NSString+Replacement.h"
 
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
