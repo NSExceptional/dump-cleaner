@@ -46,10 +46,11 @@ typedef void (^DCStructBlock)(NSString *structName);
         _SDKClasses     = [NSMutableDictionary dictionary];
         _SDKCategories  = [NSMutableDictionary dictionary];
         _SDKProtocols   = [NSMutableDictionary dictionary];
-        _structs        = [NSMutableSet set];
+        _SDKStructs     = [NSMutableSet set];
         _dumpedClasses     = [NSMutableDictionary dictionary];
         _dumpedCategories  = [NSMutableDictionary dictionary];
         _dumpedProtocols   = [NSMutableDictionary dictionary];
+        _dumpedStructs     = [NSMutableSet set];
         
         // Assert that SDK exists
         BOOL isDirectory = NO;
