@@ -10,7 +10,7 @@
 
 
 @interface DCProperty ()
-@property (nonatomic, readonly) NSString *value;
+@property (nonatomic) NSString *value;
 @property (nonatomic, readonly) BOOL alreadyObject;
 @end
 
@@ -20,36 +20,40 @@
     self = [super init];
     if (self) {
         // _string is lazily computed at runtime from _value in getter
-        _value = string;
-        
-        // Whether is object type
-        _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute_1 atIndex:0].count > 0;
-        self.isObject  = self.alreadyObject;
-        
-        // Type and name = ivar
-        NSString *type = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_type].firstObject;
-        NSString *name = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_name].firstObject;
-        _ivar = [DCIVar withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
-        
-        // Getter and setter
-        NSString *getter = [string allMatchesForRegex:krPropertyGetter_1 atIndex:krPropertyGetter_name].firstObject;
-        NSString *setter = [string allMatchesForRegex:krPropertySetter_1 atIndex:krPropertySetter_name].firstObject;
-        getter = getter ?: name;
-        setter = setter ?: [NSString stringWithFormat:@"set%@:", name.pascalCaseString];
-        
-        _rawType = [string stringByReplacingOccurrencesOfString:@" ?\\* ?" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, type.length)];
-        if (self.isObject) {
-            type = @"id";
-        }
-        
-        // Readonly?
-        _getterRegex = [NSString stringWithFormat:@"- ?\\(%@\\)%@;", type, getter];
-        if (![string allMatchesForRegex:krPropertyIsReadonly atIndex:0]) {
-            _setterRegex = [NSString stringWithFormat:@"- ?\\(void\\)%@\\(%@\\)\\w+;", setter, type];
-        }
+        self.value = string;
     }
     
     return self;
+}
+
+- (void)setValue:(NSString *)string {
+    _value = string;
+    
+    // Whether is object type
+    _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute_1 atIndex:0].count > 0;
+    self.isObject  = self.alreadyObject;
+    
+    // Type and name = ivar
+    NSString *type = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_type].firstObject;
+    NSString *name = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_name].firstObject;
+    _ivar = [DCIVar withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
+    
+    // Getter and setter
+    NSString *getter = [string allMatchesForRegex:krPropertyGetter_1 atIndex:krPropertyGetter_name].firstObject;
+    NSString *setter = [string allMatchesForRegex:krPropertySetter_1 atIndex:krPropertySetter_name].firstObject;
+    getter = getter ?: name;
+    setter = setter ?: [NSString stringWithFormat:@"set%@:", name.pascalCaseString];
+    
+    _rawType = [type stringByReplacingOccurrencesOfString:@" ?\\* ?" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, type.length)];
+    if (self.isObject) {
+        type = @"id";
+    }
+    
+    // Readonly?
+    _getterRegex = [NSString stringWithFormat:@"- ?\\(%@\\)%@;", type, getter];
+    if (![string allMatchesForRegex:krPropertyIsReadonly atIndex:0]) {
+        _setterRegex = [NSString stringWithFormat:@"- ?\\(void\\)%@\\(%@\\)\\w+;", setter, type];
+    }
 }
 
 - (NSString *)string {
@@ -100,7 +104,15 @@
 }
 
 - (void)updateWithKnownStructs:(NSArray *)structNames {
-#warning Incomplete
+    if ([self.rawType containsString:@"struct"]) {
+        for (NSString *name in structNames) {
+            if ([self.value matchesForRegex:[NSString stringWithFormat:krStructKnown, name]]) {
+                self.value = [_value stringByReplacingPattern:krStructUnknown_1_2 with:name];
+                _string = nil;
+                break;
+            }
+        }
+    }
 }
 
 @end
