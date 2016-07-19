@@ -77,7 +77,13 @@ NSString * const krPropertyIsClass = @"@property ?\\([\\w,:= ]+class[\\w,:= ]*\\
 NSString * const krPropertyHasARCAttribute_1 = @"@property ?\\([\\w,:= ]+(copy|assign|retain)[\\w,:= ]*\\)";
 
 #pragma mark Methods
-// Find methods
+/// May match a trailing space for methods with attributes, otherwise will end with semicolon.
+/// Must match with NSRegularExpressionAnchorsMatchLines.
+NSString * const krMethod = @"[-+] ?(?2)(?:(\\w+:(\\((?:(?:(?:\\w+ )?\\w+)+|\\w+<[\\w, ]+>|struct \\{(?:\\s*\\w+(?: \\w+)?(?: ?\\* ?| )[\\w\\d]+ ?(?:: ?\\d)?;)+\\s*\\})(?: ?\\*)? ?\\))(?:\\w+)?(?: |;$))+|\\w+)";
+NSString * const krMethodFast = @"[-+].+;";
+NSString * const krMethodSelectorWithParams = @"\\w+:";
+NSString * const krMethodSelectorWithoutParams = @"(?<=\\))\\w+";
+
 
 #pragma mark Instance variables
 /// Find the group of ivars

@@ -76,7 +76,12 @@ extern NSString * const krPropertyIsClass;
 extern NSString * const krPropertyHasARCAttribute_1;
 
 #pragma mark Methods
-// Find methods
+/// May match a trailing space for methods with attributes, otherwise will end with semicolon.
+/// Must match with NSRegularExpressionAnchorsMatchLines.
+extern NSString * const krMethod;
+extern NSString * const krMethodFast;
+extern NSString * const krMethodSelectorWithParams;
+extern NSString * const krMethodSelectorWithoutParams;
 
 #pragma mark Instance variables
 /// Find the group of ivars
