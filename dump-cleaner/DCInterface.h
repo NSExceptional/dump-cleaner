@@ -9,21 +9,32 @@
 #import "DCObject.h"
 
 
-@class DCProtocol, DCClass;
+@class DCProtocol, DCClass, DCProperty;
 
 /// Abstract base class for DCClass and DCProtocol
-@protocol DCInterface <NSObject>
+@interface DCInterface : DCObject {
+@protected
+    NSString *_orig;
+    NSString *_importStatement;
+}
 
 - (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes;
 - (void)updateWithKnownStructs:(NSArray *)structNames;
 - (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols;
 
 @property (nonatomic, readonly) NSString *name;
-@property (nonatomic, readonly) NSString *outputFile;
+@property (nonatomic, readonly) NSString *outputLocation;
 @property (nonatomic, readonly) NSString *importStatement;
 
 // Assumes output directory will end with "Foo.framework/Headers"
 - (void)setOutputDirectory:(NSString *)outputDirectory;
+
+
+// Internal use only //
+
+@property (nonatomic) NSMutableArray<DCProperty*> *properties;
+@property (nonatomic) NSMutableArray<NSString*>   *methods;
+@property (nonatomic) NSMutableSet<NSString*>     *protocols;
 
 @end
 

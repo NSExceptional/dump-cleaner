@@ -128,7 +128,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     
     // Set output folder for each dumped thing
     for (NSArray *array in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols])
-        for (DCObject<DCInterface> *thing in array)
+        for (DCInterface *thing in array)
             [thing setOutputDirectory:directory];
 }
 
@@ -137,9 +137,13 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSMutableSet *filteredDumps = self.dumpedStructs.mutableCopy;
     [filteredDumps minusSet:self.SDKStructs];
     _dumpedStructs = filteredDumps;
-    
     NSArray *allStructs = @[self.SDKStructs.allObjects, self.dumpedStructs.allObjects].flattened;
-    for (DCObject<DCInterface> *thing in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols].flattened) {
+    
+    // Remove existing protocols
+    [self.dumpedProtocols removeObjectsForKeys:self.SDKProtocols.allKeys];
+    
+    // Update
+    for (DCInterface *thing in @[self.dumpedClasses.allValues, self.dumpedCategories.allValues, self.dumpedProtocols.allValues].flattened) {
         [thing updateWithKnownClasses:self.SDKClasses.allValues];
         [thing updateWithKnownClasses:self.dumpedClasses.allValues];
         [thing updateWithKnownProtocols:self.SDKProtocols.allValues];
@@ -148,7 +152,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         
         // Actually write
         NSError *error = nil;
-        [thing.string writeToFile:thing.outputFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        [thing.string writeToFile:thing.outputLocation atomically:YES encoding:NSUTF8StringEncoding error:&error];
         DCWriteError(error);
     }
 }

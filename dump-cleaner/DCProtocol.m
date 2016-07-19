@@ -18,19 +18,25 @@
 }
 
 - (BOOL)isEqualToDCProtocol:(DCProtocol *)protocol {
-    return [_name isEqualToString:protocol.name];
+    return [self.name isEqualToString:protocol.name];
 }
 
-- (NSUInteger)hash { return _name.hash; }
+- (NSUInteger)hash { return self.name.hash; }
 
 #pragma mark Public interface
 
-- (NSString *)outputFile {
+- (NSString *)outputLocation {
     if (_outputDirectory) {
         return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.h", self.name]];
     }
     
     return nil;
+}
+
+- (void)setOutputDirectory:(NSString *)outputDirectory {
+    NSParameterAssert(outputDirectory);
+    _outputDirectory = outputDirectory;
+    _importStatement = DCImportStatement(outputDirectory, self.name);
 }
 
 @end

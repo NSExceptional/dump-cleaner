@@ -9,8 +9,6 @@
 #import "DCInterface.h"
 
 
-@interface DCProtocol : DCObject <DCInterface>
-
-@property (nonatomic, readonly) NSString *name;
+@interface DCProtocol : DCInterface
 
 @end

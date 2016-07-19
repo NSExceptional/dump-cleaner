@@ -12,26 +12,13 @@
 
 
 @interface DCClass ()
-
-@property (nonatomic) NSMutableSet<NSString*>     *protocols;
-@property (nonatomic) NSMutableSet<NSString*>     *classes;
-@property (nonatomic) NSArray<NSString*>          *conformedProtocols;
-@property (nonatomic) NSMutableArray<DCProperty*> *properties;
-@property (nonatomic) NSMutableArray<NSString*>   *ivars;
-@property (nonatomic) NSMutableArray<NSString*>   *methods;
-
-@property (nonatomic) NSMutableSet<DCClass*>    *dependingClasses;
-@property (nonatomic) NSMutableSet<DCProtocol*> *dependingProtocols;
-
+@property (nonatomic) NSMutableArray<DCIVar*> *ivars;
+@property (nonatomic) DCClass *dc_superclass;
 @end
 
 @implementation DCClass
 
 #pragma mark Initializers
-
-+ (instancetype)withString:(NSString *)string {
-    return [[self alloc] initWithString:string];
-}
 
 + (instancetype)withString:(NSString *)string categoryName:(NSString *)categoryName {
     DCClass *class = [self withString:string];
@@ -40,18 +27,25 @@
 }
 
 - (id)initWithString:(NSString *)string {
-    self = [super init];
+    self = [super initWithString:string];
     if (self) {
-        _string       = string.mutableCopy;
-        _name         = [string matchGroupAtIndex:krClass_name    forRegex:krClass_123];
         _categoryName = [string matchGroupAtIndex:krCategory_name forRegex:krCategory_12];
         if (!_categoryName) {
             _superclassName = [string matchGroupAtIndex:krClass_superclass forRegex:krClass_123];
         }
         
-        self.protocols          = [NSMutableSet set];
-        self.dependingClasses   = [NSMutableSet set];
-        self.dependingProtocols = [NSMutableSet set];
+        // Find
+        [self findIVars];
+        
+        // Fix
+        [self removePropertyBackingIVars];
+        [self removePropertyMethods];
+        [self removeNSObjectMethodsAndProperties];
+        [self removeSuperclassMethods];
+        
+        // Store finished product to later recreate _string with dependencies
+        // MUST NOT USE string GETTER HERE
+        _orig = _string.copy;
     }
     
     return self;
@@ -59,7 +53,7 @@
 
 #pragma mark Public interface
 
-- (NSString *)outputFile {
+- (NSString *)outputLocation {
     if (_outputDirectory) {
         if (self.categoryName) {
             return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@+%@.h", self.name, self.categoryName]];
@@ -69,6 +63,13 @@
     }
     
     return nil;
+}
+
+- (void)setOutputDirectory:(NSString *)outputDirectory {
+    NSParameterAssert(outputDirectory);
+    _outputDirectory = outputDirectory;
+    NSString *nameToUse = self.categoryName ?: [self.name stringByAppendingString:@"+AppleInternal"];
+    _importStatement = DCImportStatement(outputDirectory, nameToUse);
 }
 
 #pragma mark Internal
@@ -89,52 +90,33 @@
     if (myKey && otherKey) {
         return [myKey isEqualToString:otherKey];
     } else if (!myKey && !otherKey) {
-        return [_name isEqualToString:class.name];
+        return [self.name isEqualToString:class.name];
     }
     
     return NO;
 }
 
-- (NSUInteger)hash { return _categoryName ? self.categoryKey.hash : _name.hash; }
+- (NSUInteger)hash { return _categoryName ? self.categoryKey.hash : self.name.hash; }
 
 #pragma mark Processing
 
 - (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes {
-    NSSet *classNames = [NSSet setWithArray:[classes valueForKeyPath:@"@unionOfObjects.name"]];
-    NSArray *nonObjectProperties = [self.properties map:^id(DCProperty *property, NSUInteger idx, BOOL *discard) {
-        *discard = property.isObject || !property.ivar.isPointer;
-        return property;
-    }];
-    
-    // Update object properties
-    for (DCProperty *property in nonObjectProperties) {
-        BOOL isObject = [classNames containsObject:property.rawType];
-        property.isObject = isObject;
-        
-        // Add class dependency
-        if (isObject) {
-            for (DCClass *class in classes) {
-                if ([class.name isEqualToString:property.rawType]) {
-                    [self.dependingClasses addObject:class];
-                    break;
-                }
-            }
+    // Find superclass
+    for (DCClass *class in classes) {
+        if ([class.name isEqualToString:self.superclassName]) {
+            self.dc_superclass = class;
+            break;
         }
     }
+    
+    [super updateWithKnownClasses:classes];
 }
 
 - (void)updateWithKnownStructs:(NSArray *)structNames {
-    for (DCProperty *property in self.properties)
-        [property updateWithKnownStructs:structNames];
+    [super updateWithKnownStructs:structNames];
+    
     for (DCIVar *ivar in self.ivars)
         [ivar updateWithKnownStructs:structNames];
-}
-
-- (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols {
-    NSMutableSet *dependencies = [NSMutableSet setWithArray:protocols];
-    [dependencies intersectSet:self.protocols];
-    [self.protocols minusSet:dependencies];
-    self.dependingProtocols = dependencies.allObjects.mutableCopy;
 }
 
 #pragma mark Searching
@@ -145,35 +127,37 @@
     }].mutableCopy;
 }
 
-- (void)findProtocols {
-    self.conformedProtocols = [self.string allMatchesForRegex:krClass_123 atIndex:krClass_conformed];
-    [self.protocols addObjectsFromArray:[self.string allMatchesForRegex:krProtocolType_1 atIndex:krProtocolType_protocol]];
-}
-
-- (void)findProperties {
-    self.properties = [[self.string allMatchesForRegex:krProperty_12 atIndex:0] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        return [DCProperty withString:object];
-    }].mutableCopy;
-}
-
-- (void)findMethods {
-    
-}
-
 - (void)removePropertyBackingIVars {
-    
+    NSSet *ivars = [NSSet setWithArray:self.ivars];
+    for (DCProperty *property in self.properties)
+        if ([ivars containsObject:property.ivar])
+            [self.ivars removeObject:property.ivar];
 }
 
 - (void)removePropertyMethods {
-    
+    self.methods = [self.methods map:^id(NSString *method, NSUInteger idx, BOOL *discard) {
+        for (DCProperty *property in self.properties) {
+            if ([method matchesPattern:property.getterRegex] || [method matchesPattern:property.setterRegex]) {
+                *discard = YES;
+                return nil;
+            }
+        }
+        
+        return method;
+    }].mutableCopy;
 }
 
 - (void)removeNSObjectMethodsAndProperties {
-    
+    NSArray *selectors = @[@"class", @"hash", @"self", @"superclass", @"isEqual:"];
+    self.methods = [self.methods map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        if ([selectors containsObject:object.methodSelectorString])
+            *discard = YES;
+        return object;
+    }].mutableCopy;
 }
 
 - (void)removeSuperclassMethods {
-    
+    // TODO, this will be difficult
 }
 
 @end
