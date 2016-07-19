@@ -18,6 +18,13 @@
     return [NSString stringWithFormat:@"%c%@", c, [self stringByReplacingCharactersInRange:NSMakeRange(0, 1) withString:@""]];
 }
 
+- (BOOL)matchesPattern:(NSString *)pattern {
+    if (!pattern) return NO;
+    
+    NSRegularExpression *expr = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    return [expr numberOfMatchesInString:self options:0 range:NSMakeRange(0, self.length)] > 0;
+}
+
 - (NSString *)matchGroupAtIndex:(NSUInteger)idx forRegex:(NSString *)regex {
     NSArray *matches = [self matchesForRegex:regex];
     if (matches.count == 0) return nil;

@@ -15,4 +15,13 @@
     return [self stringByReplacingOccurrencesOfString:pattern withString:replacement options:NSRegularExpressionSearch range:NSMakeRange(0, self.length)];
 }
 
+- (NSString *)methodSelectorString {
+    NSArray *matches = [self allMatchesForRegex:krMethodSelectorWithParams atIndex:0];
+    if (matches) {
+        return [matches join:nil];
+    }
+    
+    return [self allMatchesForRegex:krMethodSelectorWithoutParams atIndex:0].firstObject;
+}
+
 @end

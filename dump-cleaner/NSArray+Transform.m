@@ -29,6 +29,24 @@
     return array.copy;
 }
 
+- (NSString *)join:(NSString *)separator {
+    NSMutableString *joined = [NSMutableString string];
+    
+    if (separator.length) {
+        for (NSString *string in self) {
+            [joined appendFormat:@"%@%@", string, separator];
+        }
+        
+        [joined deleteCharactersInRange:NSMakeRange(joined.length-separator.length, separator.length)];
+    } else {
+        for (NSString *string in self) {
+            [joined appendString:string];
+        }
+    }
+    
+    return joined.copy;
+}
+
 - (NSArray *)flattened {
     return [self valueForKeyPath:@"@unionOfOfArrays.self"];
 }

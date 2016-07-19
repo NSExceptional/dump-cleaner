@@ -13,4 +13,6 @@
 
 - (instancetype)stringByReplacingPattern:(NSString *)pattern with:(NSString *)replacement;
 
+@property (nonatomic, readonly) NSString *methodSelectorString;
+
 @end
