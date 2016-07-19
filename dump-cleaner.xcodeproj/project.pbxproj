@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		B42B3CD61C965B2700EB64F6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CD51C965B2700EB64F6 /* main.m */; };
 		B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */; };
+		B46878821D3ED13D0021CF5B /* DCInterface.m in Sources */ = {isa = PBXBuildFile; fileRef = B46878811D3ED13D0021CF5B /* DCInterface.m */; };
 		B4A89D821D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m in Sources */ = {isa = PBXBuildFile; fileRef = B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */; };
 		B4AE655B1D3977A2004724C0 /* NSString+Replacement.m in Sources */ = {isa = PBXBuildFile; fileRef = B4AE655A1D3977A2004724C0 /* NSString+Replacement.m */; };
 		B4BF9FB31CB233AB00975D2A /* NSArray+Transform.m in Sources */ = {isa = PBXBuildFile; fileRef = B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */; };
@@ -38,6 +39,7 @@
 		B42B3CD51C965B2700EB64F6 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Regex.h"; sourceTree = "<group>"; };
 		B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Regex.m"; sourceTree = "<group>"; };
+		B46878811D3ED13D0021CF5B /* DCInterface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCInterface.m; sourceTree = "<group>"; };
 		B4A89D7D1D36E872002FCD11 /* DCInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCInterface.h; sourceTree = "<group>"; };
 		B4A89D801D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+SubdirectoryContents.h"; sourceTree = "<group>"; };
 		B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+SubdirectoryContents.m"; sourceTree = "<group>"; };
@@ -117,6 +119,7 @@
 				B4E073591C9F87A30076C94C /* DCObject.h */,
 				B4E0735A1C9F87A30076C94C /* DCObject.m */,
 				B4A89D7D1D36E872002FCD11 /* DCInterface.h */,
+				B46878811D3ED13D0021CF5B /* DCInterface.m */,
 				B4E073381C9F84EA0076C94C /* DCClass.h */,
 				B4E073391C9F84EA0076C94C /* DCClass.m */,
 				B4C5A2061D36AB0F0099ED06 /* DCProtocol.h */,
@@ -186,6 +189,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B42B3CD61C965B2700EB64F6 /* main.m in Sources */,
+				B46878821D3ED13D0021CF5B /* DCInterface.m in Sources */,
 				B4E0735E1C9FAAE30076C94C /* DCSDK.m in Sources */,
 				B4C5A2081D36AB0F0099ED06 /* DCProtocol.m in Sources */,
 				B4E073331C9F80EF0076C94C /* dump-cleaner-constants.m in Sources */,

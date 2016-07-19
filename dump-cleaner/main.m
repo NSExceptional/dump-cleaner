@@ -25,7 +25,6 @@ NSString * DCGetFlags(NSArray *args);
 NSString * DCGetDirectory(NSArray *args, NSString *allowedFlags, NSString *givenFlags);
 NSString * DCRemoveQuotes(NSString *str);
 NSArray * DCFilesInDirectory(NSString *path, BOOL recursive);
-void DCProcessFileSimple(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors);
 BOOL DCPathIsDirectory(NSString *path);
 NSString * DCRelativePathForClassFile(NSString *class, NSString *currentPath, NSArray *otherFilePaths);
 DCOptions DCOptionsFromString(NSString *flags);
@@ -58,8 +57,6 @@ int main(int argc, const char * argv[]) {
         // Process files
         NSArray *filePaths = DCFilesInDirectory(directory, options & DCOptionsRecursive);
         NSMutableArray *errors = [NSMutableArray array];
-        for (NSString *path in filePaths) {
-            DCProcessFileSimple(path, filePaths, options, errors);
             
             if (options & DCOptionsVerbose)
                 printf("Processed file: %s\n", path.lastPathComponent.UTF8String);
@@ -156,147 +153,6 @@ NSArray * DCFilesInDirectory(NSString *path, BOOL recursive) {
     }
     
     return files.copy;
-}
-
-void DCProcessFileSimple(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors) {
-    NSError *error = nil;
-    NSMutableString *fileContents = [NSMutableString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
-    
-    if (error) {
-        [errors addObject:error];
-    } else {
-        // Replace "unsigned int" and "unsigned long" with NSUInteger, and "double" with CGFloat
-        [fileContents replaceOccurrencesOfString:@"unsigned int" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"unsigned long" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"NSUInteger long" withString:@"unsigned long long" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"double" withString:@"CGFloat" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:NSMakeRange(0, fileContents.length)];
-        
-        // Replace full structs with their types (thrice for possibly nested structs)
-        NSString *structRegex = [NSString stringWithFormat:krStruct, krKnownStructs];
-        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:structRegex withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        
-        // Remove NSObject overrides
-        // hash, class, superclass, description, debugDescription, etc
-        static NSArray *regexes = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            regexes = @[@"- \\(NSUInteger\\)hash; ?\n", @"- \\(id\\)class; ?\n", @"- \\(id\\)superclass; ?\n", @"- \\(id\\)description; ?\n",
-                        @"- \\(id\\)debugDescription; ?\n", @"- \\(void\\)\\.cxx_destruct; ?\n", @"@property .+NSUInteger hash; ?\n",
-                        @"@property .+Class class; ?\n", @"@property .+Class superclass; ?\n", @"@property .+NSString \\*description; ?\n",
-                        @"@property .+NSString \\*debugDescription; ?\n"];
-        });
-        for (NSString *expr in regexes)
-            [fileContents replaceOccurrencesOfString:expr withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        
-        // Import parent class
-        if ((options & DCOptionsImportSuperclass) == DCOptionsImportSuperclass) {
-            NSString *superclass = [fileContents matchGroupAtIndex:krSupeclass_name forRegex:krSupeclass];
-            NSString *relativePath = DCRelativePathForClassFile(superclass, path, otherFilePaths);
-            if (relativePath) {
-                NSString *import = [NSString stringWithFormat:@"#import \"%@\"\n", relativePath];
-                if (![fileContents containsString:import])
-                    [fileContents insertString:import atIndex:0];
-            }
-        }
-        
-        // Fix "id<protocol> foo" where id is missing
-        NSArray<NSString*> *hiccups = [fileContents allMatchesForRegex:krDelegateMissingType atIndex:krDelegateMissingType_protocol];
-        NSArray<NSValue*>  *ranges  = [fileContents rangesForAllMatchesForRegex:krDelegateMissingType atIndex:krDelegateMissingType_replace];
-        int i = 0, offset = 0;
-        for (NSString *protocol in hiccups) {
-            NSString *replacement = [[@"id" stringByAppendingString:protocol] stringByAppendingString:@" "];
-            NSRange r = ranges[i++].rangeValue;
-            r.location += offset;
-            offset += replacement.length - r.length;
-            [fileContents replaceCharactersInRange:r withString:replacement];
-        }
-        
-        // Fix empty struct refs, ie "struct __CFBinaryHeap { }*"
-        NSArray *emptyStructs = [fileContents allMatchesForRegex:krEmptyStruct atIndex:krEmptyStruct_type];
-        ranges = [fileContents rangesForAllMatchesForRegex:krEmptyStruct atIndex:0];
-        i = 0, offset = 0;
-        for (NSString *structType in emptyStructs) {
-            NSString *replacement = [structType stringByReplacingOccurrencesOfString:@"__" withString:@""];
-            NSRange r = ranges[i++].rangeValue;
-            r.location += offset;
-            offset += replacement.length - r.length;
-            [fileContents replaceCharactersInRange:r withString:replacement];
-        }
-        
-        // Remove property getters and setters
-        NSArray *properties = [fileContents allMatchesForRegex:krProperty atIndex:krProperty_name];
-        NSArray *types = [fileContents allMatchesForRegex:krProperty atIndex:krProperty_type];
-        assert(properties.count == types.count);
-        i = 0;
-        for (NSString *property in properties) {
-            NSString *type = types[i++];
-            
-            // Hacky but it'll do for 99% of classes
-            if (([type containsString:@"*"] && ![type hasPrefix:@"char"]) || [type allMatchesForRegex:krProtocol atIndex:krProtocol_name].count) {
-                NSString *regex = [NSString stringWithFormat:@"- \\(void\\)set%@:\\(id\\)\\w+;\n", property.pascalCaseString];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-                regex = [NSString stringWithFormat:@"- \\(id\\)%@;\n", property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-            } else {
-                NSString *regex = [NSString stringWithFormat:@"- \\(void\\)set%@:\\(%@\\)\\w+;\n", property.pascalCaseString, type];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-                regex = [NSString stringWithFormat:@"- \\(%@\\)%@;\n", type, property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-            }
-            
-            if (!(options & DCOptionsKeepPropertyIVars)) {
-                type = [type stringByReplacingOccurrencesOfString:@"*" withString:@"\\*"];
-                NSString *regex = [NSString stringWithFormat:@" +%@ ?_%@;\n", type, property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-                
-                // Remove empty braces
-                [fileContents replaceOccurrencesOfString:@" \\{\\n\\}" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-            }
-        }
-        
-        // Forward protocols
-        if ((options & DCOptionsForwardDeclareProtocols) == DCOptionsForwardDeclareProtocols) {
-            NSArray *protocols = [fileContents allMatchesForRegex:krProtocol atIndex:krProtocol_name];
-            protocols = [NSSet setWithArray:protocols].allObjects;
-            if (protocols.count) {
-                NSMutableString *forward = [NSMutableString stringWithString:@"@protocol "];
-                for (NSString *proto in protocols)
-                    [forward appendFormat:@"%@, ", proto];
-                [forward replaceCharactersInRange:NSMakeRange(forward.length-2, 2) withString:@";\n"];
-                if (![fileContents containsString:forward])
-                    [fileContents insertString:forward atIndex:0];
-            }
-        }
-        
-        // Remove conformed protocols
-        if ((options & DCOptionsRemoveConformedProtocols) == DCOptionsRemoveConformedProtocols) {
-            NSRange r = [fileContents rangesForAllMatchesForRegex:krConformedProtocols atIndex:krConformedProtocols_value].firstObject.rangeValue;
-            [fileContents replaceCharactersInRange:r withString:@""];
-        }
-        
-        // Import possible classes
-        if ((options & DCOptionsImportAvailibleClasses) == DCOptionsImportAvailibleClasses) {
-            NSArray *classes = [fileContents allMatchesForRegex:@"(\\w+) ?\\* ?\\w+;" atIndex:1];
-            for (NSString *missingClass in classes) {
-                NSString *relativePath = DCRelativePathForClassFile(missingClass, path, otherFilePaths);
-                if (relativePath) {
-                    NSString *import = [NSString stringWithFormat:@"#import \"%@\"\n", relativePath];
-                    if (![fileContents containsString:import])
-                        [fileContents insertString:import atIndex:0];
-                }
-            }
-        }
-        
-        // Save changes
-#if TESTING
-        [fileContents writeToFile:[path stringByAppendingString:@".clean.txt"] atomically:YES encoding:NSUTF8StringEncoding error:nil];
-#else
-        [fileContents writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
-#endif
-    }
 }
 
 BOOL DCPathIsDirectory(NSString *path) {
