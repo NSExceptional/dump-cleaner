@@ -22,6 +22,12 @@
 @property (nonatomic, readonly) NSString *outputFile;
 @property (nonatomic, readonly) NSString *importStatement;
 
+// Assumes output directory will end with "Foo.framework/Headers"
 - (void)setOutputDirectory:(NSString *)outputDirectory;
 
 @end
+
+static inline NSString * DCImportStatement(NSString *outputFolder, NSString *name) {
+    NSString *framework = [outputFolder matchGroupAtIndex:1 forRegex:@"(\\w+)\\.framework/Headers"];
+    return [NSString stringWithFormat:@"<%@/%@.h>\n", framework, name];
+}
