@@ -63,7 +63,12 @@
 #pragma mark Public interface
 
 - (void)updateWithKnownStructs:(NSArray *)structNames {
-#warning Incomplete
+    for (NSString *name in structNames) {
+        if ([_type matchesForRegex:[NSString stringWithFormat:krStructKnown, name]]) {
+            _type = [_type stringByReplacingPattern:krStructUnknown_1_2 with:name];
+            break;
+        }
+    }
 }
 
 @end
