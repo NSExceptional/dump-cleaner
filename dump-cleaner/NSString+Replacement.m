@@ -18,7 +18,8 @@
 - (NSString *)methodSelectorString {
     NSArray *matches = [self allMatchesForRegex:krMethodSelectorWithParams atIndex:0];
     if (matches) {
-        return [matches join:nil];
+        NSString *selector = [matches join:nil];
+        return [selector stringByReplacingPattern:@" +$" with:@";"];
     }
     
     return [self allMatchesForRegex:krMethodSelectorWithoutParams atIndex:0].firstObject;
