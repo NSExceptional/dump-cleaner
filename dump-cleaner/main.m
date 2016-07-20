@@ -34,8 +34,8 @@ DCOptions DCOptionsFromString(NSString *flags);
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
 #if !TESTING
-        if (argc < 2) {
-            printf("%s", kUsage.UTF8String);
+        if (argc < 3) {
+            DCLog(kUsage);
             return 0;
         }
         

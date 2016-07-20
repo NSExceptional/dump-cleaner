@@ -16,22 +16,28 @@
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
 
-#define DCAssertEqual(a, b) DCAssert(a == b)
-#define DCAssertLessThan(a, b) DCAssert(a < b)
-#define DCAssertGreaterThan(a, b) DCAssert(a > b)
+#define DCAssertEqual(a, b) DCAssert((a) == b)
+#define DCAssertLessThan(a, b) DCAssert((a) < b)
+#define DCAssertGreaterThan(a, b) DCAssert((a) > b)
 #define DCAssertNonZero(a) DCAssert(a != 0)
 #define DCAssertTrue(a) DCAssert(a)
-#define DCAssertFalse(a) DCAssert(a == NO)
+#define DCAssertFalse(a) DCAssert((a) == NO)
 
 #define DCAssertEqualObjects(a, b) DCAssert([a isEqual:b])
-#define DCAssertNotNil(a) DCAssert(a != nil)
-#define DCAssertNil(a) DCAssert(a == nil)
+#define DCAssertNotNil(a) DCAssert((a) != nil)
+#define DCAssertNil(a) DCAssert((a) == nil)
+
+
+#define DCLog(message) printf("%s\n", message.UTF8String)
 
 #define DCTabbedFormat(...) [@"\t" stringByAppendingString:[NSString stringWithFormat:__VA_ARGS__]]
 #define DCTabbedMessage(message) [@"\t" stringByAppendingString:message]
 
-#define DCExitOnError(error) if (error) { printf("%s", DCTabbedMessage(error.localizedDescription).UTF8String); exit(1); }
-#define DCExitWithMessage(...) printf("%s", DCTabbedFormat(__VA_ARGS__).UTF8String); exit(1)
-#define DCWriteError(error) if (error) { printf("%s", DCTabbedMessage(error.localizedDescription).UTF8String); }
-#define DCWriteMessage(...) printf("%s", DCTabbedFormat(__VA_ARGS__).UTF8String)
+#define DCExitOnError(error) if (error) { DCLog(DCTabbedMessage(error.localizedDescription)); exit(1); }
+#define DCExitWithFormat(...) DCLog(DCTabbedFormat(__VA_ARGS__)); exit(1)
+#define DCExitWithMessage(message) DCLog(DCTabbedMessage(message)); exit(1)
+#define DCWriteError(error) if (error) { DCLog(DCTabbedMessage(error.localizedDescription)); }
+#define DCWriteFormat(...) DCLog(DCTabbedFormat(__VA_ARGS__))
+#define DCWriteMessage(message) DCLog(DCTabbedMessage(message))
+
 

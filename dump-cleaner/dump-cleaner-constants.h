@@ -13,6 +13,13 @@ extern NSString * const kUsage;
 extern NSString * const krImportStatement;
 extern NSString * const kUmbrellaHeaderHeader;
 
+extern NSString * const kXcodeSDKsPath;
+extern NSString * const kXcodeBetaSDKsPath;
+extern NSString * const kDefaultSDKName;
+
+extern NSString * const kCouldNotFindSDKsMessage;
+
+
 #pragma mark - Classes, categories, protocols -
 
 #pragma mark Classes

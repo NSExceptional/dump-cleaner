@@ -55,7 +55,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         // Assert that SDK exists
         BOOL isDirectory = NO;
         if (!([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDirectory] && isDirectory)) {
-            DCExitWithMessage(@"SDK does not exist at the given path: %@", path);
+            DCExitWithFormat(@"SDK does not exist at the given path: %@", path);
         }
         
         [self findThingsInSDK];
@@ -206,7 +206,7 @@ typedef void (^DCStructBlock)(NSString *structName);
                 [self proccessSDKHeader:header];
             
         } else {
-            DCWriteMessage(@"No headers folder in framework '%@'", framework);
+            DCWriteFormat(@"No headers folder in framework '%@'", framework);
         }
     }
 }
