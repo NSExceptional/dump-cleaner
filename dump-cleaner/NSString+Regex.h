@@ -15,6 +15,8 @@
 
 - (BOOL)matchesPattern:(NSString *)pattern;
 
+- (NSComparisonResult)compareSDKVersion:(NSString *)version;
+
 - (NSString *)matchGroupAtIndex:(NSUInteger)idx forRegex:(NSString *)regex;
 - (NSArray<NSTextCheckingResult*> *)matchesForRegex:(NSString *)pattern;
 - (NSArray<NSString*> *)allMatchesForRegex:(NSString *)regex atIndex:(NSUInteger)idx;

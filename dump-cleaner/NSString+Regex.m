@@ -25,6 +25,41 @@
     return [expr numberOfMatchesInString:self options:0 range:NSMakeRange(0, self.length)] > 0;
 }
 
+- (NSComparisonResult)compareSDKVersion:(NSString *)version {
+    NSArray<NSNumber*> *myParts = [[self componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        return @(object.integerValue);
+    }];
+    NSArray<NSNumber*> *otherParts = [[version componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        return @(object.integerValue);
+    }];
+    assert(myParts.count && otherParts.count);
+    
+    NSComparisonResult result = [myParts[0] compare:otherParts[0]];
+    
+    if (result == NSOrderedSame) {
+        result = [myParts[1] compare:otherParts[1]];
+        if (result == NSOrderedSame) {
+            if (myParts.count >= 3) {
+                if (otherParts.count >= 3) {
+                    return [myParts[2] compare:otherParts[2]];
+                }
+                
+                return NSOrderedDescending;
+            }
+            else if (otherParts.count >= 3) {
+                return NSOrderedAscending;
+            }
+            else {
+                return NSOrderedSame;
+            }
+        }
+        
+        return result;
+    }
+    
+    return result;
+}
+
 - (NSString *)matchGroupAtIndex:(NSUInteger)idx forRegex:(NSString *)regex {
     NSArray *matches = [self matchesForRegex:regex];
     if (matches.count == 0) return nil;
