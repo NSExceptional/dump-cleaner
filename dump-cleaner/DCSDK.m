@@ -34,6 +34,11 @@ typedef void (^DCStructBlock)(NSString *structName);
 
 #pragma mark Initialization
 
++ (instancetype)latestSDK {
+    NSString *SDK = [[self firstAvailableSDKDirectory] stringByAppendingPathComponent:kDefaultSDKName];
+    return SDK ? [self SDKAtPath:SDK] : nil;
+}
+
 + (instancetype)SDKAtPath:(NSString *)path {
     return [[self alloc] initWithPath:path];
 }
@@ -65,6 +70,45 @@ typedef void (^DCStructBlock)(NSString *structName);
 }
 
 #pragma mark Public interface
+
++ (NSDictionary<NSString*,NSString*> *)availableSDKs {
+    NSFileManager *manager = [NSFileManager defaultManager];
+    
+    // Get SDKs folder
+    NSString *SDKFolder = [self firstAvailableSDKDirectory];
+    if (!SDKFolder) { DCExitWithMessage(kCouldNotFindSDKsMessage); }
+    
+    // Get contents
+    NSError *error = nil;
+    NSArray<NSString*> *names = [manager contentsOfDirectoryAtPath:SDKFolder error:&error];
+    DCExitOnError(error);
+    
+    if (!names.count) { DCExitWithFormat(@"No SDKs found in the SDKs folder located at: %@", SDKFolder); }
+    
+    // Filter by ending with .sdk, append paths
+    names = [names map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        *discard = ![object hasSuffix:@".sdk"];
+        return object;
+    }];
+    NSArray *paths = [names map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+        return [SDKFolder stringByAppendingPathComponent:object];
+    }];
+    
+    return [NSDictionary dictionaryWithObjects:paths forKeys:names];
+}
+
++ (NSString *)firstAvailableSDKDirectory {
+    NSFileManager *manager = [NSFileManager defaultManager];
+    BOOL isDirectory = NO;
+    
+    if ([manager fileExistsAtPath:kXcodeSDKsPath isDirectory:&isDirectory] && isDirectory) {
+        return kXcodeSDKsPath;
+    } else if ([manager fileExistsAtPath:kXcodeBetaSDKsPath isDirectory:&isDirectory] && isDirectory) {
+        return kXcodeBetaSDKsPath;
+    }
+    
+    return nil;
+}
 
 - (void)processFrameworksInDirectory:(NSString *)frameworksFolder andOutputTo:(NSString *)outputDirectory {
     NSFileManager *manager = [NSFileManager defaultManager];

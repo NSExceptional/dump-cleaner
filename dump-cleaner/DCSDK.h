@@ -11,7 +11,10 @@
 
 @interface DCSDK : NSObject
 
+/// @return {name, path}
++ (NSDictionary<NSString*,NSString*> *)availableSDKs;
 + (instancetype)SDKAtPath:(NSString *)path;
++ (instancetype)latestSDK;
 
 - (void)processFrameworksInDirectory:(NSString *)frameworksFolder andOutputTo:(NSString *)outputDirectory;
 
