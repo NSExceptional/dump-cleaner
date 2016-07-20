@@ -7,16 +7,11 @@
 //
 
 #include <getopt.h>
-#import "NSString+Regex.h"
+#import "DCSDK.h"
+
 
 typedef NS_OPTIONS(NSUInteger, DCOptions) {
-    DCOptionsKeepPropertyIVars        = 1 << 0,
-    DCOptionsImportSuperclass         = 1 << 1,
-    DCOptionsImportAvailibleClasses   = 1 << 2,
-    DCOptionsForwardDeclareProtocols  = 1 << 3,
-    DCOptionsRemoveConformedProtocols = 1 << 4,
-    DCOptionsRecursive                = 1 << 5,
-    DCOptionsVerbose                  = 1 << 6
+    DCOptionsVerbose = 1 << 0
 };
 
 NSArray * DCArgsFromCharPtr(const char **vargs, int c);
@@ -28,6 +23,8 @@ NSArray * DCFilesInDirectory(NSString *path, BOOL recursive);
 BOOL DCPathIsDirectory(NSString *path);
 NSString * DCRelativePathForClassFile(NSString *class, NSString *currentPath, NSArray *otherFilePaths);
 DCOptions DCOptionsFromString(NSString *flags);
+
+void chooseFromExistingFrameworks(NSString *inputLoc, NSString *outputLoc);
 
 #define TESTING 0
 
@@ -41,35 +38,46 @@ int main(int argc, const char * argv[]) {
         
         NSArray *args = DCArgsFromCharPtr(argv, argc);
 #else
-        NSArray *args = @[@"exe", @"-scprv", @"."];
+        NSArray *args = @[@".", @"path/to/files"];
 #endif
-        NSString *flags = DCGetFlags(args.copy);
+        NSString *inputLoc  = args[args.count-2];
+        NSString *outputLoc = args[args.count-1];
+        //        NSString *flags     = DCGetFlags(args.copy);
+        //        DCOptions options = DCOptionsFromString(flags);
         
         // Get absolute path to working folder
-        NSString *directory = DCGetDirectory(args, @"iscpPrv", flags);
-        if (!directory.isAbsolutePath) {
-            directory = [NSURL URLWithString:directory relativeToURL:[NSURL fileURLWithPath:[NSFileManager defaultManager].currentDirectoryPath]].absoluteString;
-            directory = [directory stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-        }
+        //        NSString *directory = DCGetDirectory(args, @"v", flags);
+        //        if (!directory.isAbsolutePath) {
+        //            directory = [NSURL URLWithString:directory relativeToURL:[NSURL fileURLWithPath:[NSFileManager defaultManager].currentDirectoryPath]].path;
+        //        }
         
-        DCOptions options = DCOptionsFromString(flags);
         
-        // Process files
-        NSArray *filePaths = DCFilesInDirectory(directory, options & DCOptionsRecursive);
-        NSMutableArray *errors = [NSMutableArray array];
-            
-            if (options & DCOptionsVerbose)
-                printf("Processed file: %s\n", path.lastPathComponent.UTF8String);
-        }
+        // User choose from available SDKs
+        chooseFromExistingFrameworks(inputLoc, outputLoc);
         
-        if (errors.count) {
-            printf("There were some errors:\n\n");
-            for (NSError *error in errors)
-                printf("%s\n\n", error.localizedDescription.UTF8String);
-        }
     }
     
     return 0;
+}
+
+void chooseFromExistingFrameworks(NSString *inputLoc, NSString *outputLoc) {
+    NSDictionary *SDKs = [DCSDK availableSDKs];
+    NSMutableString *choose = [NSMutableString stringWithString:@"Dump cleaner\n------------\n"];
+    int i = 1;
+    for (NSString *sdk in SDKs.allKeys)
+        [choose appendFormat:@"  [%d.]\t %@", i++, sdk];
+    [choose appendFormat:@"Choose an SDK to use: "];
+    
+    NSInteger choice = 0;
+    
+    while (!NSLocationInRange(choice, NSMakeRange(1, SDKs.count))) {
+        DCWriteMessage(choose);
+        NSString *option = [NSString stringWithUTF8String:[NSFileHandle fileHandleWithStandardInput].availableData.bytes];
+        choice = option.integerValue;
+    }
+    
+    DCSDK *sdk = [DCSDK SDKAtPath:SDKs[SDKs.allKeys[choice]]];
+    [sdk processFrameworksInDirectory:inputLoc andOutputTo:outputLoc];
 }
 
 NSArray * DCArgsFromCharPtr(const char **vargs, int c) {
@@ -191,20 +199,6 @@ NSString * DCRelativePathForClassFile(NSString *class, NSString *currentPath, NS
 
 DCOptions DCOptionsFromString(NSString *flags) {
     DCOptions options;
-    if ([flags containsString:@"i"])
-        options |= DCOptionsKeepPropertyIVars;
-    if ([flags containsString:@"s"])
-        options |= DCOptionsImportSuperclass;
-    if ([flags containsString:@"c"])
-        options |= DCOptionsImportAvailibleClasses;
-    if ([flags containsString:@"p"])
-        options |= DCOptionsForwardDeclareProtocols;
-    if ([flags containsString:@"P"])
-        options |= DCOptionsRemoveConformedProtocols;
-    if ([flags containsString:@"r"])
-        options |= DCOptionsRecursive;
-    if ([flags containsString:@"v"])
-        options |= DCOptionsVerbose;
     
     return options;
 }
