@@ -10,6 +10,7 @@
 		B42B3CD61C965B2700EB64F6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CD51C965B2700EB64F6 /* main.m */; };
 		B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */ = {isa = PBXBuildFile; fileRef = B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */; };
 		B46878821D3ED13D0021CF5B /* DCInterface.m in Sources */ = {isa = PBXBuildFile; fileRef = B46878811D3ED13D0021CF5B /* DCInterface.m */; };
+		B46878851D4164F60021CF5B /* DCProgressBar.m in Sources */ = {isa = PBXBuildFile; fileRef = B46878841D4164F60021CF5B /* DCProgressBar.m */; };
 		B4A89D821D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m in Sources */ = {isa = PBXBuildFile; fileRef = B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */; };
 		B4AE655B1D3977A2004724C0 /* NSString+Replacement.m in Sources */ = {isa = PBXBuildFile; fileRef = B4AE655A1D3977A2004724C0 /* NSString+Replacement.m */; };
 		B4BF9FB31CB233AB00975D2A /* NSArray+Transform.m in Sources */ = {isa = PBXBuildFile; fileRef = B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */; };
@@ -40,6 +41,8 @@
 		B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Regex.h"; sourceTree = "<group>"; };
 		B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Regex.m"; sourceTree = "<group>"; };
 		B46878811D3ED13D0021CF5B /* DCInterface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCInterface.m; sourceTree = "<group>"; };
+		B46878831D4164F60021CF5B /* DCProgressBar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCProgressBar.h; sourceTree = "<group>"; };
+		B46878841D4164F60021CF5B /* DCProgressBar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DCProgressBar.m; sourceTree = "<group>"; };
 		B4A89D7D1D36E872002FCD11 /* DCInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DCInterface.h; sourceTree = "<group>"; };
 		B4A89D801D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSFileManager+SubdirectoryContents.h"; sourceTree = "<group>"; };
 		B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSFileManager+SubdirectoryContents.m"; sourceTree = "<group>"; };
@@ -95,23 +98,16 @@
 			isa = PBXGroup;
 			children = (
 				B42B3CD51C965B2700EB64F6 /* main.m */,
-				B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */,
-				B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */,
 				B4E073301C9F7F510076C94C /* dump-cleaner-prefix.pch */,
 				B4E073311C9F80EF0076C94C /* dump-cleaner-constants.h */,
 				B4E073321C9F80EF0076C94C /* dump-cleaner-constants.m */,
-				B4BF9FB11CB233AB00975D2A /* NSArray+Transform.h */,
-				B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */,
-				B4A89D801D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.h */,
-				B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */,
-				B4AE65591D3977A2004724C0 /* NSString+Replacement.h */,
-				B4AE655A1D3977A2004724C0 /* NSString+Replacement.m */,
+				B46878871D41862E0021CF5B /* Categories */,
 				B4E073341C9F83940076C94C /* Classes */,
 			);
 			path = "dump-cleaner";
 			sourceTree = "<group>";
 		};
-		B4E073341C9F83940076C94C /* Classes */ = {
+		B46878861D4164FE0021CF5B /* Model */ = {
 			isa = PBXGroup;
 			children = (
 				B4E0735C1C9FAAE30076C94C /* DCSDK.h */,
@@ -128,6 +124,31 @@
 				B4E073361C9F83C30076C94C /* DCProperty.m */,
 				B4E0735F1C9FAD3D0076C94C /* DCIVar.h */,
 				B4E073601C9FAD3D0076C94C /* DCIVar.m */,
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
+		B46878871D41862E0021CF5B /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				B42B3CDC1C9677DA00EB64F6 /* NSString+Regex.h */,
+				B42B3CDD1C9677DA00EB64F6 /* NSString+Regex.m */,
+				B4BF9FB11CB233AB00975D2A /* NSArray+Transform.h */,
+				B4BF9FB21CB233AB00975D2A /* NSArray+Transform.m */,
+				B4A89D801D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.h */,
+				B4A89D811D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m */,
+				B4AE65591D3977A2004724C0 /* NSString+Replacement.h */,
+				B4AE655A1D3977A2004724C0 /* NSString+Replacement.m */,
+			);
+			name = Categories;
+			sourceTree = "<group>";
+		};
+		B4E073341C9F83940076C94C /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				B46878861D4164FE0021CF5B /* Model */,
+				B46878831D4164F60021CF5B /* DCProgressBar.h */,
+				B46878841D4164F60021CF5B /* DCProgressBar.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -201,6 +222,7 @@
 				B4A89D821D36F8C9002FCD11 /* NSFileManager+SubdirectoryContents.m in Sources */,
 				B42B3CDE1C9677DA00EB64F6 /* NSString+Regex.m in Sources */,
 				B4E073371C9F83C30076C94C /* DCProperty.m in Sources */,
+				B46878851D4164F60021CF5B /* DCProgressBar.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -70,6 +70,9 @@
                 [_string replaceOccurrencesOfString:@"@property " withString:@"@property (retain) " options:0 range:NSMakeRange(0, _string.length)];
             }
         }
+        
+        // Regex does not match semi colons
+        [_string appendString:@";"];
     }
     
     return _string;
