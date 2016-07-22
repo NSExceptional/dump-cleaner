@@ -39,7 +39,19 @@
     }
 }
 
+- (void)verbose1:(NSString *)message {
+    if (self.verbosity >= 1)
+        [self printMessage:message];
+}
+
+- (void)verbose2:(NSString *)message {
+    if (self.verbosity >= 2)
+        [self printMessage:message];
+}
+
 - (void)printMessage:(NSString *)message {
+    if (!self.showing) return;
+    
     NSString *format = [@"\r%" stringByAppendingString:[NSString stringWithFormat:@"-%ds\n", self.lastConsoleWidth]];
     printf(format.UTF8String, message.UTF8String);
     fflush(stdout);
@@ -67,8 +79,8 @@
 }
 
 - (int)progressMaxWidth {
-    // For testing in Xcode when the below doesn't work
-    //        return 80;
+    //     For testing in Xcode when the below doesn't work
+    return 80;
     struct winsize ww;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ww);
     return MIN(80, ww.ws_col);

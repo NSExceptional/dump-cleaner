@@ -88,8 +88,12 @@
     
     NSMutableArray *strings = [NSMutableArray array];
     for (NSTextCheckingResult *result in matches) {
-        if (result.numberOfRanges >= idx)
-            [strings addObject:[self substringWithRange:[result rangeAtIndex:idx]]];
+        if (result.numberOfRanges > idx) {
+            NSRange r = [result rangeAtIndex:idx];
+            if (r.location != NSNotFound) {
+                [strings addObject:[self substringWithRange:r]];
+            }
+        }
     }
     
     return strings;

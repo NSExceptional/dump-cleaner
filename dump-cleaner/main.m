@@ -26,7 +26,7 @@ DCOptions DCOptionsFromString(NSString *flags);
 
 void chooseFromExistingFrameworks(NSString *inputLoc, NSString *outputLoc);
 
-#define TESTING 0
+#define TESTING 1
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -38,7 +38,7 @@ int main(int argc, const char * argv[]) {
         
         NSArray *args = DCArgsFromCharPtr(argv, argc);
 #else
-        NSArray *args = @[@".", @"path/to/files"];
+        NSArray *args = @[@".", @"/Users/tantan/Desktop/dumped/System/Library/Frameworks", @"/Users/tantan/Desktop/cleaned"];
 #endif
         NSString *inputLoc  = args[args.count-2];
         NSString *outputLoc = args[args.count-1];
@@ -51,33 +51,41 @@ int main(int argc, const char * argv[]) {
         //            directory = [NSURL URLWithString:directory relativeToURL:[NSURL fileURLWithPath:[NSFileManager defaultManager].currentDirectoryPath]].path;
         //        }
         
-        
         // User choose from available SDKs
         chooseFromExistingFrameworks(inputLoc, outputLoc);
-        
     }
     
     return 0;
 }
 
 void chooseFromExistingFrameworks(NSString *inputLoc, NSString *outputLoc) {
+    
+    // Get available SDKs, compile choice list
     NSDictionary *SDKs = [DCSDK availableSDKs];
     NSMutableString *choose = [NSMutableString stringWithString:@"Dump cleaner\n------------\n"];
     int i = 1;
     for (NSString *sdk in SDKs.allKeys)
-        [choose appendFormat:@"  [%d.]\t %@", i++, sdk];
+        [choose appendFormat:@"  [%d.]\t %@\n", i++, sdk];
     [choose appendFormat:@"Choose an SDK to use: "];
     
+    // Make sure they choose a valid option
     NSInteger choice = 0;
-    
     while (!NSLocationInRange(choice, NSMakeRange(1, SDKs.count))) {
-        DCWriteMessage(choose);
+        DCLog(choose);
         NSString *option = [NSString stringWithUTF8String:[NSFileHandle fileHandleWithStandardInput].availableData.bytes];
         choice = option.integerValue;
     }
     
+    // Start progress bar
+    DCProgressBar *progress = [DCProgressBar currentProgress];
+    progress.verbosity = 1;
+    [progress start];
+    
+    // Start processing
     DCSDK *sdk = [DCSDK SDKAtPath:SDKs[SDKs.allKeys[choice]]];
     [sdk processFrameworksInDirectory:inputLoc andOutputTo:outputLoc];
+    [progress stop];
+    DCLog(@"Done");
 }
 
 NSArray * DCArgsFromCharPtr(const char **vargs, int c) {

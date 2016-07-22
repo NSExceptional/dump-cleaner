@@ -18,6 +18,11 @@
 - (void)printMessage:(NSString *)message;
 - (void)stop;
 
+- (void)verbose1:(NSString *)message;
+- (void)verbose2:(NSString *)message;
+
+@property (nonatomic) NSInteger verbosity;
+
 // Prints newline when percentage == 100
 @property (nonatomic) NSInteger percentage;
 

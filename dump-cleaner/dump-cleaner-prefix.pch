@@ -12,6 +12,7 @@
 #import "NSArray+Transform.h"
 #import "NSFileManager+SubdirectoryContents.h"
 #import "NSString+Replacement.h"
+#import "DCProgressBar.h"
 
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
@@ -40,4 +41,4 @@
 #define DCWriteFormat(...) DCLog(DCTabbedFormat(__VA_ARGS__))
 #define DCWriteMessage(message) DCLog(DCTabbedMessage(message))
 
-
+#define Format(...) [NSString stringWithFormat:__VA_ARGS__]
