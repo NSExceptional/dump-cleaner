@@ -110,6 +110,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     return nil;
 }
 
+/// Dumped frameworks, not SDK frameworks. See findThingsInSDK for that.
 - (void)processFrameworksInDirectory:(NSString *)frameworksFolder andOutputTo:(NSString *)outputDirectory {
     NSFileManager *manager = [NSFileManager defaultManager];
     NSError *error = nil;
@@ -122,12 +123,25 @@ typedef void (^DCStructBlock)(NSString *structName);
     
     // Process all dumped frameworks //
     
+    DCProgressBar *progress = [DCProgressBar currentProgress];
+    [progress printMessage:@"Proessing dumped headers..."];
+    BOOL doFrameworkProgress = [DCProgressBar currentProgress].verbosity >= 1;
+    NSUInteger f = 0;
+    
     // framework = "Framework.framework"
     for (NSString *framework in frameworks) {
-        NSString *frameworkPath = [frameworksFolder stringByAppendingPathComponent:framework];
+        // Progress indicator
+        if (!doFrameworkProgress) {
+            progress.percentage = f++/frameworks.count * 100;
+        } else {
+            progress.percentage = 0;
+        }
+        
+        [progress verbose1:framework];
         
         // TODO test this shit
         // Get headers in the given framework folder
+        NSString *frameworkPath = [frameworksFolder stringByAppendingPathComponent:framework];
         NSArray *headers = [[manager filesInDirectoryAtPath:frameworkPath recursive:YES] map:^id(NSString *item, NSUInteger idx, BOOL *discard) {
             *discard = ![item hasSuffix:@".h"];
             return item;
@@ -136,7 +150,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         // output = ".../outdir/Cleaned/FrameworkPrivate.framework/Headers/"
         NSString *newFrameworkName = [framework stringByReplacingOccurrencesOfString:@".framework" withString:@"Private"];
         NSString *output = [outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"/Cleaned/%@.framework/Headers/", newFrameworkName]];
-        [self processFilesAtPaths:headers andSetOutputLocation:output];
+        [self processFilesAtPaths:headers andSetOutputLocation:output showProgress:doFrameworkProgress];
         
         frameworksToNewNames[framework] = newFrameworkName;
         newNamesToPaths[newFrameworkName] = output;
@@ -158,12 +172,17 @@ typedef void (^DCStructBlock)(NSString *structName);
 
 #pragma mark Workflow
 
-- (void)processFilesAtPaths:(NSArray<NSString*> *)paths andSetOutputLocation:(NSString *)directory {
+- (void)processFilesAtPaths:(NSArray<NSString*> *)paths andSetOutputLocation:(NSString *)directory showProgress:(BOOL)showProgress {
     if (!paths.count) return;
     
     // Collect all dumped header contents
-    for (NSString *path in paths)
+    NSUInteger i = 1;
+    for (NSString *path in paths) {
         [self processDumpedHeader:path];
+        if (showProgress) {
+            [DCProgressBar currentProgress].percentage = i++/paths.count * 100;
+        }
+    }
     
     // Create output folder
     NSError *error = nil;
@@ -234,8 +253,19 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSArray *frameworks = [manager contentsOfDirectoryAtPath:self.frameworksPath error:&error];
     DCExitOnError(error);
     
+    [[DCProgressBar currentProgress] printMessage:@"Parsing SDK..."];
+    BOOL doFrameworkProgress = [DCProgressBar currentProgress].verbosity >= 1;
+    NSUInteger f = 0;
+    
     // Enumerate framework folders in SDK
     for (NSString *framework in frameworks) {
+        // Progress indicator
+        if (!doFrameworkProgress) {
+            [DCProgressBar currentProgress].percentage = f++/frameworks.count * 100;
+        } else {
+            [DCProgressBar currentProgress].percentage = 0;
+        }
+        
         // headersPath = "Framework.framework/" + "Headers", then
         // headersPath = ".../frameworksdir/" + "Framework.framework/Headers"
         NSString *headersPath = [framework stringByAppendingPathComponent:@"Headers"];
@@ -244,13 +274,20 @@ typedef void (^DCStructBlock)(NSString *structName);
         
         // Check if directory exists
         if ([manager fileExistsAtPath:headersPath isDirectory:&isDirectory] && isDirectory) {
+            [[DCProgressBar currentProgress] verbose1:framework];
+            
             // Proccess framework headers
             NSArray *headers = [manager filesInDirectoryAtPath:headersPath recursive:NO];
-            for (NSString *header in headers)
+            NSUInteger fh = 1;
+            for (NSString *header in headers) {
                 [self proccessSDKHeader:header];
+                if (doFrameworkProgress) {
+                    [DCProgressBar currentProgress].percentage = fh++/headers.count * 100;
+                }
+            }
             
         } else {
-            DCWriteFormat(@"No headers folder in framework '%@'", framework);
+            [[DCProgressBar currentProgress] printMessage:Format(@"No headers folder in framework '%@'", framework)];
         }
     }
 }
@@ -313,6 +350,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSString *header = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
     DCExitOnError(error);
     
+    [[DCProgressBar currentProgress] verbose2:path];
     
     // Classes
     for (NSTextCheckingResult *match in [header matchesForRegex:krClassDefinition]) {
