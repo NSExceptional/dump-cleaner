@@ -8,7 +8,9 @@
 
 #import "DCObject.h"
 
-@interface DCIVar : DCObject
+@interface DCVariable : DCObject
+
++ (instancetype)type:(NSString *)type name:(NSString *)name;
 
 @property (nonatomic, readonly) NSString *name;
 @property (nonatomic, readonly) NSString *type;

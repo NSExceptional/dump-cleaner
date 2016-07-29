@@ -6,14 +6,37 @@
 //  Copyright © 2016 Tanner Bennett. All rights reserved.
 //
 
-#import "DCIVar.h"
+#import "DCVariable.h"
 
 
-@implementation DCIVar
+@implementation DCVariable
+
++ (instancetype)type:(NSString *)type name:(NSString *)name {
+    return [[self alloc] initWithType:type name:name];
+}
+
+- (id)initWithType:(NSString *)type name:(NSString *)name {
+    NSParameterAssert(type); NSParameterAssert(name);
+    NSParameterAssert(![type hasSuffix:@" "]);
+    self = [super init];
+    if (self) {
+        _type = type;
+        _name = name;
+        _isPointer = [type hasSuffix:@"*"];
+        
+        // Space if no pointer, no space if pointer
+        if (self.isPointer) {
+            _string = [NSMutableString stringWithFormat:@"%@%@;", _type, _name];
+        } else {
+            _string = [NSMutableString stringWithFormat:@"%@ %@;", _type, _name];
+        }
+    }
+    
+    return self;
+}
 
 - (id)initWithString:(NSString *)string {
     self = [super init];
-    
     if (self) {
         _name = [string allMatchesForRegex:krIvarComponents_12 atIndex:krIvarComponents_name].firstObject;
         _type = [string allMatchesForRegex:krIvarComponents_12 atIndex:krIvarComponents_type].firstObject;
@@ -28,9 +51,9 @@
         
         // Space if no pointer, no space if pointer
         if (self.isPointer) {
-            _string = [NSString stringWithFormat:@"    %@%@;", _type, _name].mutableCopy;
+            _string = [NSString stringWithFormat:@"%@%@;", _type, _name].mutableCopy;
         } else {
-            _string = [NSString stringWithFormat:@"    %@ %@;", _type, _name].mutableCopy;
+            _string = [NSString stringWithFormat:@"%@ %@;", _type, _name].mutableCopy;
         }
     }
     
@@ -38,22 +61,22 @@
 }
 
 - (BOOL)isEqual:(id)object {
-    if ([object isKindOfClass:[DCIVar class]])
+    if ([object isKindOfClass:[DCVariable class]])
         return [self isEqualToIVar:object];
     
     return [super isEqual:object];
 }
 
-- (BOOL)isEqualToIVar:(DCIVar *)ivar {
+- (BOOL)isEqualToIVar:(DCVariable *)ivar {
     return [self.name isEqualToString:ivar.name] && [self.type isEqualToString:ivar.type];
 }
 
 + (BOOL)test {
-    DCIVar *ivar = [DCIVar withString:@"    NSString* _name;\n"];
+    DCVariable *ivar = [DCVariable withString:@"    NSString* _name;\n"];
     DCAssertEqualObjects(@"_name", ivar.name);
     DCAssertEqualObjects(@"NSString *", ivar.type);
     
-    ivar = [DCIVar withString:@"    NSArray<NSString *> *_things;\n"];
+    ivar = [DCVariable withString:@"    NSArray<NSString *> *_things;\n"];
     DCAssertEqualObjects(@"_things", ivar.name);
     DCAssertEqualObjects(@"NSArray<NSString *> *", ivar.type);
     

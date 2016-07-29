@@ -115,7 +115,7 @@
 - (void)updateWithKnownStructs:(NSArray *)structNames {
     [super updateWithKnownStructs:structNames];
     
-    for (DCIVar *ivar in self.ivars)
+    for (DCVariable *ivar in self.ivars)
         [ivar updateWithKnownStructs:structNames];
 }
 

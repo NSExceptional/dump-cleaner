@@ -36,7 +36,7 @@
     // Type and name = ivar
     NSString *type = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_type].firstObject;
     NSString *name = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_name].firstObject;
-    _ivar = [DCIVar withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
+    _ivar = [DCVariable withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
     
     // Getter and setter
     NSString *getter = [string allMatchesForRegex:krPropertyGetter_1 atIndex:krPropertyGetter_name].firstObject;

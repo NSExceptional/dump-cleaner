@@ -7,7 +7,7 @@
 //
 
 #import "DCObject.h"
-#import "DCIVar.h"
+#import "DCVariable.h"
 
 @interface DCProperty : DCObject
 
@@ -21,7 +21,7 @@
 /// Used to find and remove instances of the getter
 @property (nonatomic, readonly) NSString *getterRegex;
 /// Used to find and remove instances of the backing ivar
-@property (nonatomic, readonly) DCIVar *ivar;
+@property (nonatomic, readonly) DCVariable *ivar;
 
 - (void)updateWithKnownStructs:(NSArray *)structNames;
 

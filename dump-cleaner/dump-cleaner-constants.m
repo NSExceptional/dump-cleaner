@@ -99,7 +99,7 @@ NSString * const krIvarsPresent_1     = @"@interface \\w+ : \\w+ <(?:\\w+(?:, )?
 NSUInteger const krIvarsPresent_ivars = 1;
 
 /// Grab parts of each ivar given a string of ivars grabbed using the krIvarsPresent_1 regex
-NSString * const krIvarComponents_12 = @"\\s*((?:(?:(?:\\w+ +)?\\w+)+|\\w+<[\\w, ]+>|struct \\{(?:\\s*\\w+(?: +\\w+)?(?: *?\\* *?| +)[\\w\\d]+ *?(?:: *?\\d)?;)+\\s*\\})(?: *?\\*)?) *?(?<= |\\*|>|})([\\w\\d]+) *?;";
+NSString * const krIvarComponents_12 = @" *?((?:(?:(?:\\w+ +)?\\w+)+|\\w+<[\\w, ]+>|struct \\{(?:\\s*\\w+(?: +\\w+)?(?: *?\\* *?| +)[\\w\\d]+ *?(?:: *?\\d)?;)+\\s*\\})(?: *?\\*)?) *?(?<= |\\*|>|})([\\w\\d]+) *?;";
 NSUInteger const krIvarComponents_type = 1;
 NSUInteger const krIvarComponents_name = 2;
 
