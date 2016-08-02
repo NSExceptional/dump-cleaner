@@ -81,9 +81,9 @@
 - (int)progressMaxWidth {
     //     For testing in Xcode when the below doesn't work
     return 80;
-    struct winsize ww;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &ww);
-    return MIN(80, ww.ws_col);
+//    struct winsize ww;
+//    ioctl(STDOUT_FILENO, TIOCGWINSZ, &ww);
+//    return MIN(80, ww.ws_col);
 }
 
 - (NSString *)progressString {

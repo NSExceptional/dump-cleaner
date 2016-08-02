@@ -13,8 +13,6 @@
 @interface NSScanner (ObjectiveC)
 
 - (BOOL)scanInterface:(DCInterface **)output;
-- (BOOL)scanClass:(DCClass **)output;
-- (BOOL)scanProtocol:(DCProtocol **)output;
 - (BOOL)scanProperty:(DCProperty **)output;
 - (BOOL)scanVariable:(DCVariable **)output;
 - (BOOL)scanStructOrUnion:(NSString **)output;
