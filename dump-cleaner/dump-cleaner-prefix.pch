@@ -13,6 +13,8 @@
 #import "NSFileManager+SubdirectoryContents.h"
 #import "NSString+Replacement.h"
 #import "DCProgressBar.h"
+#import "NSScanner+Helper.h"
+#import "NSScanner+ObjectiveC.h"
 
 
 #define DCAssert(value) if (!(value)) { NSLog( @"Assertion failed: "#value ); return NO; }
@@ -42,3 +44,23 @@
 #define DCWriteMessage(message) DCLog(DCTabbedMessage(message))
 
 #define Format(...) [NSString stringWithFormat:__VA_ARGS__]
+
+
+// Scanner stuff
+
+#define StaticArray(name, ...) nil; { static dispatch_once_t onceToken; dispatch_once(&onceToken, ^{ name = @[__VA_ARGS__]; }); }
+
+#define ScanPush() NSInteger start = self.scanLocation
+#define ScanPop() self.scanLocation = start
+#define ScanAssert(cond) if (!cond) { return NO; }
+#define ScanAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
+#define ScanVariableAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
+
+// Helper macros for building a string from multiple scans.
+#define ScanBuilderInit() NSMutableString *__scanned = [NSMutableString string]
+#define ScanBuilderString() __scanned
+#define ScanAppendFormat(scan, format) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if (r){[__scanned appendFormat:format, __tmp];} r; })
+#define ScanAppend(scan) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if(r){[__scanned appendString:__tmp];} r; })
+#define ScanAppend_(scan) ScanAppendFormat(scan, @"%@ ")
+
+#define NSMutableStringOptionalAppend(str, optional) if (optional) { [str appendFormat:@"%@ ", optional]; }

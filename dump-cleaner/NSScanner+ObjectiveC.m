@@ -7,52 +7,13 @@
 //
 
 #import "NSScanner+ObjectiveC.h"
+#import "NSScanner+Helper.h"
 #import "DCProperty.h"
 #import "DCVariable.h"
 #import "DCClass.h"
 #import "DCProtocol.h"
+#import "DCMethod.h"
 
-
-static NSString * const kVariableNameChars = @"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
-static NSString * const kVariableStartNameChars = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-static NSString * const kVariableAttributesChars = @"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_()&!|#,";
-static NSString * const kNumericOperatorChars = @"&^|<>";
-
-#define StaticArray(name, ...) nil; { static dispatch_once_t onceToken; dispatch_once(&onceToken, ^{ name = @[__VA_ARGS__]; }); }
-
-#define ScanPush() NSInteger start = self.scanLocation
-#define ScanPop() self.scanLocation = start
-#define ScanAssert(cond) if (!cond) { return NO; }
-#define ScanAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
-#define ScanVariableAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
-
-// Helper macros for building a string from multiple scans.
-#define ScanBuilderInit() NSMutableString *__scanned = [NSMutableString string]
-#define ScanBuilderString() __scanned
-#define ScanAppendFormat(scan, format) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if (r){[__scanned appendFormat:format, __tmp];} r; })
-#define ScanAppend(scan) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if(r){[__scanned appendString:__tmp];} r; })
-#define ScanAppend_(scan) ScanAppendFormat(scan, @"%@ ")
-
-#define NSMutableStringOptionalAppend(str, optional) if (optional) { [str appendFormat:@"%@ ", optional]; }
-
-@interface NSScanner (Helper)
-@property (nonatomic, readonly) NSCharacterSet *variableNameCharacterSet;
-@property (nonatomic, readonly) NSCharacterSet *variableAttributesCharacterSet;
-@property (nonatomic, readonly) NSCharacterSet *alphaCharacterSet;
-@property (nonatomic, readonly) NSCharacterSet *numericOperatorsCharacterSet;
-@property (nonatomic, readonly) NSCharacterSet *spaceCharacterSet;
-@property (nonatomic, readonly) NSCharacterSet *newlineCharacterSet;
-
-- (BOOL)scanString:(NSString *)string;
-- (BOOL)scanToString:(NSString *)string;
-- (BOOL)scanCharacters:(NSCharacterSet *)characters;
-- (BOOL)scanToCharacters:(NSCharacterSet *)characters;
-- (BOOL)scanAny:(NSArray<NSString*> *)strings into:(NSString **)output;
-- (BOOL)scanExpression:(NSString **)output;
-- (BOOL)scanNumberLiteral:(NSString **)output;
-- (BOOL)scanToStringOnSameLine:(NSString *)string;
-
-@end
 
 @implementation NSScanner (ObjectiveC)
 
@@ -86,29 +47,40 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
 
 - (BOOL)scanProperty:(DCProperty **)output {
     ScanPush();
-    ScanBuilderInit();
-    
+    static NSArray *propSelectors = StaticArray(propSelectors, @"getter", @"setter")
     static NSArray *propAttrs = StaticArray(propAttrs, @"nonatomic", @"copy",
                                             @"readonly",@"assign", @"strong",
                                             @"weak", @"retain", @"atomic", @"class")
     
-    ScanAssert(ScanAppend_(self scanString:@"@property" intoString));
-    if (ScanAppend(self scanString:@"(" intoString)) {
+    NSMutableArray *attributes = [NSMutableArray array];
+    
+    ScanAssert([self scanString:@"@property"]);
+    if ([self scanString:@"("]) {
+        NSString *attr = nil;
         do {
-            ScanAssertPop(ScanAppend(self scanAny:propAttrs into));
-        } while (ScanAppend_(self scanString:@"," intoString));
+            // Regular attributes
+            if ([self scanAny:propAttrs into:&attr]) {
+            } else {
+                // getter= / setter= attributes
+                ScanAssertPop([self scanAny:propSelectors into:&attr] && [self scanString:@"="]);
+                NSString *selector = nil;
+                ScanAssertPop([self scanSelector:&selector]);
+                attr = [attr stringByAppendingFormat:@"=%@", selector];
+            }
+            [attributes addObject:attr]; attr = nil;
+        } while ([self scanString:@","]);
         
-        ScanAssertPop(ScanAppend_(self scanString:@")" intoString));
+        ScanAssertPop([self scanString:@")"]);
     }
     
     DCVariable *variable = nil;
     ScanAssertPop([self scanVariable:&variable]);
     
-    *output = [DCProperty withString:[ScanBuilderString() stringByAppendingString:variable.string]];
+    *output = [DCProperty withAttributes:attributes variable:variable];
     return YES;
 }
 
-- (BOOL)scanMethod:(NSString **)output {
+- (BOOL)scanMethod:(DCMethod **)output {
     ScanPush();
     ScanBuilderInit();
     
@@ -195,6 +167,91 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     // Scan for pointers and return NO if we needed them but did not find them.
     // Check for pointers first because we can have more even if we don't need them.
     ScanAssertPop(ScanAppend(self scanPointers) || !needsPointer);
+    
+    *output = ScanBuilderString();
+    return YES;
+}
+
+- (BOOL)scanInterfaceBody:(InterfaceBodyBlock)callback isProtocol:(BOOL)isProtocol {
+    ScanPush();
+    DCProperty *tmpProp = nil;
+    DCMethod *tmpMethod = nil;
+    NSMutableArray<DCProperty*> *properties = [NSMutableArray array];
+    NSMutableArray<DCMethod*> *methods      = [NSMutableArray array];
+    
+    BOOL didFind = YES;
+    while (didFind) {
+        didFind = NO;
+        if ([self scanProperty:&tmpProp]) {
+            [properties addObject:tmpProp];
+            
+            tmpProp = nil;
+            didFind = YES;
+        }
+        else if ([self scanMethod:&tmpMethod]) {
+            [methods addObject:tmpMethod];
+            
+            tmpMethod = nil;
+            didFind = YES;
+        } else {
+            // Skip past comments and things like @optional if protocol
+            static NSArray *protocolThings = StaticArray(protocolThings, @"@optional", @"@required");
+            didFind = isProtocol ? [self scanAny:protocolThings into:nil] : NO || [self scanIgnoredThing];
+        }
+    }
+    
+    ScanAssertPop([self scanString:@"@end"]);
+    
+    callback(properties, methods);
+    return YES;
+}
+
+- (BOOL)scanProtocolConformanceList:(NSArray<NSString*> **)output {
+    ScanAssert([self scanString:@"<"]);
+    
+    ScanPush();
+    NSMutableArray *protocols = [NSMutableArray array];
+    NSString *tmp = nil;
+    
+    do {
+        ScanAssertPop([self scanIdentifier:&tmp]);
+        [protocols addObject:tmp]; tmp = nil;
+    } while ([self scanString:@","]);
+    
+    ScanAssertPop([self scanString:@">"]);
+    
+    *output = protocols;
+    return YES;
+}
+
+- (BOOL)scanInstanceVariableList:(NSArray<DCVariable*> **)output {
+    ScanAssert([self scanString:@"{"]);
+    
+    ScanPush();
+    static NSArray *ivarQualifiers = StaticArray(ivarQualifiers, @"@protected", @"@private", @"@public");
+    NSMutableArray *ivars = [NSMutableArray array];
+    DCVariable *tmp = nil;
+    
+    while ([self scanAny:ivarQualifiers into:nil] || [self scanVariable:&tmp]) {
+        if (tmp) {
+            [ivars addObject:tmp];
+            tmp = nil;
+        }
+    }
+    
+    ScanAssertPop([self scanString:@"}"]);
+    
+    *output = ivars;
+    return YES;
+}
+
+- (BOOL)scanSelector:(NSString **)output {
+    ScanBuilderInit();
+    
+    ScanAssert(ScanAppend(self scanIdentifier));
+    while (ScanAppend(self scanString:@":" intoString)) {
+        ScanAppend(self scanIdentifier);
+    }
     
     *output = ScanBuilderString();
     return YES;
@@ -355,7 +412,7 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     ScanPush();
     
     // Scan past whitespace, fail if scanned other than whitespace (ie digit)
-    ScanAssertPop(![self scanUpToCharactersFromSet:self.alphaCharacterSet intoString:nil]);
+    ScanAssertPop(![self scanToCharacters:self.alphaCharacterSet]);
     return [self scanCharactersFromSet:self.variableNameCharacterSet intoString:output];
 }
 
@@ -442,167 +499,6 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     }
     
     return YES;
-}
-
-@end
-
-
-@implementation NSScanner (Helper)
-
-- (NSCharacterSet *)variableNameCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:kVariableNameChars];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (NSCharacterSet *)variableAttributesCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:kVariableAttributesChars];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (NSCharacterSet *)alphaCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:kVariableStartNameChars];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (NSCharacterSet *)numericOperatorsCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:kNumericOperatorChars];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (NSCharacterSet *)spaceCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@" "];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (NSCharacterSet *)newlineCharacterSet {
-    static NSCharacterSet *sharedCharacterSet = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"\n"];
-    });
-    
-    return sharedCharacterSet;
-}
-
-- (BOOL)scanString:(NSString *)string {
-    return [self scanString:string intoString:nil];
-}
-
-- (BOOL)scanToString:(NSString *)string {
-    ScanPush();
-    BOOL ret = [self scanUpToString:string intoString:nil];
-    
-    // Default behavior is undesirable; we don't want to
-    // scan to the end of a string and succeed if the
-    // string does not exist when we expect it to.
-    if (ret && self.scanLocation == self.string.length) {
-        if (![self.string hasSuffix:string]) {
-            ScanPop();
-            return NO;
-        }
-    }
-    
-    return ret;
-}
-
-- (BOOL)scanCharacters:(NSCharacterSet *)characters {
-    return [self scanCharactersFromSet:characters intoString:nil];
-}
-
-- (BOOL)scanToCharacters:(NSCharacterSet *)characters {
-    return [self scanUpToCharactersFromSet:characters intoString:nil];
-}
-
-- (BOOL)scanAny:(NSArray<NSString *> *)strings into:(NSString **)output {
-    for (NSString *string in strings)
-        if ([self scanString:string intoString:output]) {
-            return YES;
-        }
-    return NO;
-}
-
-- (BOOL)scanExpression:(NSString **)output {
-    ScanPush();
-    
-    NSMutableString *result = [NSMutableString string];
-    NSString *tmp = nil;
-    
-    // expr = [(] digit [operator expr]* [)]
-    
-    // [(] digit
-    BOOL needsClosingBrace = [self scanString:@"("];
-    ScanAssertPop([self scanNumberLiteral:&tmp]);
-    [result appendString:tmp];
-    
-    // [operator expr]*
-    while ([self scanCharactersFromSet:self.numericOperatorsCharacterSet intoString:&tmp]) {
-        [result appendFormat:@" %@ ", tmp];
-        ScanAssertPop([self scanExpression:&tmp]);
-        [result appendString:tmp];
-    }
-    
-    if (needsClosingBrace) {
-        ScanAssertPop([self scanString:@")"]);
-    }
-    
-    *output = result.copy;
-    return YES;
-}
-
-- (BOOL)scanNumberLiteral:(NSString **)output {
-    ScanPush();
-    ScanBuilderInit();
-    
-    // num ::= (0x digit+) | (digit*['.' digit*][f])
-    BOOL hex = ScanAppend(self scanString:@"0x" intoString);
-    ScanAssertPop(ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString));
-    if (!hex) {
-        if (ScanAppend(self scanString:@"." intoString)) {
-            ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString);
-        }
-        ScanAppend(self scanString:@"f" intoString);
-    }
-    
-    *output = ScanBuilderString();
-    return YES;
-}
-
-- (BOOL)scanToStringOnSameLine:(NSString *)string {
-    ScanPush();
-    
-    NSString *scanned = nil;
-    BOOL ret = [self scanUpToString:string intoString:&scanned];
-    if ([scanned containsString:@"\n"]) {
-        ScanPop();
-        return NO;
-    }
-    
-    return ret;
 }
 
 @end
