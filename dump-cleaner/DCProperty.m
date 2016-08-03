@@ -10,72 +10,67 @@
 
 
 @interface DCProperty ()
-@property (nonatomic) NSString *value;
 @property (nonatomic, readonly) BOOL alreadyObject;
+@property (nonatomic, readonly) NSMutableArray *attributes;
 @end
 
 @implementation DCProperty
 
-- (id)initWithString:(NSString *)string {
++ (instancetype)withAttributes:(NSArray *)attrs variable:(DCVariable *)variable {
+    return [[self alloc] initWithAttributes:attrs variable:variable];
+}
+
+- (id)initWithString:(NSString *)string { return nil; }
+- (id)initWithAttributes:(NSArray *)attrs variable:(DCVariable *)variable {
+    NSParameterAssert(attrs); NSParameterAssert(variable);
     self = [super init];
     if (self) {
-        // _string is lazily computed at runtime from _value in getter
-        self.value = string;
+        _name          = variable.name;
+        _ivar          = variable;
+        _attributes    = attrs.mutableCopy;
+        _isObject      = _alreadyObject = ({
+            [attrs containsObject:@"copy"] || [attrs containsObject:@"retain"] ||
+            [attrs containsObject:@"assign"] || [variable.type isEqualToString:@"id"] ||
+            ([variable.type hasPrefix:@"id"] && ![variable.type containsString:@"*"]);
+        });
+        
+        variable.name = [@"_" stringByAppendingString:variable.name];
+        
+        // Getter and setter //
+        // Filter the attibutes array to find the
+        // getter/setter attributes, or default
+        // to the compiler generated ones.
+        
+        _getterSelector = [[attrs map:^id(NSString *str, NSUInteger idx, BOOL *discard) {
+            *discard = ![str hasPrefix:@"getter"];
+            return str;
+        }].firstObject componentsSeparatedByString:@"="][1] ?: variable.name;
+        if (![attrs containsObject:@"readonly"]) {
+            _setterSelector = [[attrs map:^id(NSString *str, NSUInteger idx, BOOL *discard) {
+                *discard = ![str hasPrefix:@"setter"];
+                return str;
+            }].firstObject componentsSeparatedByString:@"="][1] ?:
+            [NSString stringWithFormat:@"set%@:", variable.name.capitalizedString];
+        }
     }
     
     return self;
 }
 
-- (void)setValue:(NSString *)string {
-    _value = string;
-    
-    // Whether is object type
-    _alreadyObject = [string allMatchesForRegex:krPropertyHasARCAttribute_1 atIndex:0].count > 0;
-    self.isObject  = self.alreadyObject;
-    
-    // Type and name = ivar
-    NSString *type = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_type].firstObject;
-    NSString *name = [string allMatchesForRegex:krProperty_12 atIndex:krProperty_name].firstObject;
-    _ivar = [DCVariable withString:[NSString stringWithFormat:@"%@ _%@;", type, name]];
-    
-    // Getter and setter
-    NSString *getter = [string allMatchesForRegex:krPropertyGetter_1 atIndex:krPropertyGetter_name].firstObject;
-    NSString *setter = [string allMatchesForRegex:krPropertySetter_1 atIndex:krPropertySetter_name].firstObject;
-    getter = getter ?: name;
-    setter = setter ?: [NSString stringWithFormat:@"set%@:", name.pascalCaseString];
-    
-    _rawType = [type stringByReplacingOccurrencesOfString:@" ?\\* ?" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, type.length)];
-    if (self.isObject) {
-        type = @"id";
-    }
-    
-    // Readonly?
-    _getterRegex = [NSString stringWithFormat:@"- ?\\(%@\\)%@;", type, getter];
-    if (![string allMatchesForRegex:krPropertyIsReadonly atIndex:0]) {
-        _setterRegex = [NSString stringWithFormat:@"- ?\\(void\\)%@\\(%@\\)\\w+;", setter, type];
-    }
-}
-
 - (NSString *)string {
     if (!_string) {
-        _string = self.value.mutableCopy;
-        [_string replaceOccurrencesOfString:@"@property ?\\( ?" withString:@"@property (" options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
-        [_string replaceOccurrencesOfString:@" ?, ?" withString:@", " options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
-        [_string replaceOccurrencesOfString:@" ?\\) ?" withString:@") " options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
-        [_string replaceOccurrencesOfString:@" ?\\* ?" withString:@" *" options:NSRegularExpressionSearch range:NSMakeRange(0, _string.length)];
-        if (self.isObject && !self.alreadyObject) {
-            if ([_string containsString:@"("]) {
-                [_string replaceOccurrencesOfString:@"(" withString:@"(retain, " options:0 range:NSMakeRange(0, _string.length)];
-            } else {
-                [_string replaceOccurrencesOfString:@"@property " withString:@"@property (retain) " options:0 range:NSMakeRange(0, _string.length)];
-            }
-        }
-        
-        // Regex does not match semi colons
-        [_string appendString:@";"];
+        [self buildString];
     }
     
     return _string;
+}
+
+- (NSString *)classType {
+    if (_isObject) {
+        return _ivar.rawType;
+    }
+    
+    return nil;
 }
 
 #pragma mark Tests
@@ -107,15 +102,37 @@
 }
 
 - (void)updateWithKnownStructs:(NSArray *)structNames {
-    if ([self.rawType containsString:@"struct"]) {
+    if ([self.ivar.type hasPrefix:@"struct"]) {
+        NSString *structName = [self.ivar.type componentsSeparatedByString:@" "][1];
+        assert(structName);
         for (NSString *name in structNames) {
-            if ([self.value matchesForRegex:[NSString stringWithFormat:krStructKnown, name]]) {
-                self.value = [_value stringByReplacingPattern:krStructUnknown_1_2 with:name];
+            if ([structName isEqualToString:name]) {
+                self.ivar.type = name;
                 _string = nil;
                 break;
             }
         }
     }
+}
+
+#pragma mark Processing
+
+- (void)buildString {
+    _string = [NSMutableString stringWithString:@"@property "];
+    // Property attributes
+    if (_attributes.count) {
+        [_string appendString:@"("];
+        for (NSString *attribute in _attributes)
+            [_string appendFormat:@"%@, ", attribute];
+        if (_isObject && !_alreadyObject) {
+            [_string appendString:@"retain) "];
+        } else {
+            [_string deleteCharactersInRange:NSMakeRange(_string.length-2, 2)];
+            [_string appendString:@") "];
+        }
+    }
+    
+    [_string appendFormat:@"%@ %@;", self.ivar.type, self.name];
 }
 
 @end
