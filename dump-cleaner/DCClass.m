@@ -188,9 +188,10 @@
 }
 
 - (void)removePropertyMethods {
-    self.methods = [self.methods map:^id(NSString *method, NSUInteger idx, BOOL *discard) {
+    self.methods = [self.methods map:^id(DCMethod *method, NSUInteger idx, BOOL *discard) {
         for (DCProperty *property in self.properties) {
-            if ([method matchesPattern:property.getterRegex] || [method matchesPattern:property.setterRegex]) {
+            if ([method.selectorString isEqualToString:property.getterSelector] ||
+                [method.string isEqualToString:property.setterSelector]) {
                 *discard = YES;
                 return nil;
             }
@@ -202,10 +203,10 @@
 
 - (void)removeNSObjectMethodsAndProperties {
     NSArray *selectors = @[@"class", @"hash", @"self", @"superclass", @"isEqual:"];
-    self.methods = [self.methods map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        if ([selectors containsObject:object.methodSelectorString])
+    self.methods = [self.methods map:^id(DCMethod *method, NSUInteger idx, BOOL *discard) {
+        if ([selectors containsObject:method.selectorString])
             *discard = YES;
-        return object;
+        return method;
     }].mutableCopy;
 }
 
