@@ -22,14 +22,7 @@
     if (self) {
         _type = type;
         _name = name;
-        _isPointer = [type hasSuffix:@"*"];
-        
-        // Space if no pointer, no space if pointer
-        if (self.isPointer) {
-            _string = [NSMutableString stringWithFormat:@"%@%@;", _type, _name];
-        } else {
-            _string = [NSMutableString stringWithFormat:@"%@ %@;", _type, _name];
-        }
+        [self buildString];
     }
     
     return self;
@@ -91,6 +84,35 @@
             _type = [_type stringByReplacingPattern:krStructUnknown_1_2 with:name];
             break;
         }
+    }
+}
+
+- (void)setType:(NSString *)type {
+    _type = type;
+    [self buildString];
+}
+
+- (void)setName:(NSString *)name {
+    _name = name;
+    [self buildString];
+}
+
+#pragma mark Processing
+
+- (void)buildString {
+    _isPointer = [_type hasSuffix:@"*"];
+    
+    // Space if no pointer, no space if pointer
+    if (self.isPointer) {
+        _string = [NSMutableString stringWithFormat:@"%@%@;", _type, _name];
+    } else {
+        _string = [NSMutableString stringWithFormat:@"%@ %@;", _type, _name];
+    }
+    
+    _rawType = [_type componentsSeparatedByString:@" "].firstObject;
+    _rawType = [_rawType stringByTrimmingCharactersInSet:[NSCharacterSet letterCharacterSet].invertedSet];
+    if ([_rawType isEqualToString:@"struct"] || [_rawType isEqualToString:@"union"]) {
+        _rawType = nil;
     }
 }
 
