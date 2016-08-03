@@ -7,7 +7,7 @@
 //
 
 #import "NSString+Replacement.h"
-
+#import "NSScanner+ObjectiveC.h"
 
 @implementation NSString (Replacement)
 
@@ -16,6 +16,9 @@
 }
 
 - (NSString *)methodSelectorString {
+    NSScanner *scanner = [NSScanner scannerWithString:self];
+    
+    if (![self scanstring])
     NSArray *matches = [self allMatchesForRegex:krMethodSelectorWithParams atIndex:0];
     if (matches) {
         NSString *selector = [matches join:nil];

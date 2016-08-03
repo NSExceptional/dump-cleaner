@@ -11,13 +11,6 @@
 
 @implementation NSString (Regex)
 
-- (NSString *)pascalCaseString {
-    if (!self.length) return self;
-    char c = [self characterAtIndex:0];
-    c = toupper(c);
-    return [NSString stringWithFormat:@"%c%@", c, [self stringByReplacingCharactersInRange:NSMakeRange(0, 1) withString:@""]];
-}
-
 - (BOOL)matchesPattern:(NSString *)pattern {
     if (!pattern) return NO;
     

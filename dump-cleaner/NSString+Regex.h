@@ -11,8 +11,6 @@
 
 @interface NSString (Regex)
 
-@property (nonatomic, readonly) NSString *pascalCaseString;
-
 - (BOOL)matchesPattern:(NSString *)pattern;
 
 - (NSComparisonResult)compareSDKVersion:(NSString *)version;
