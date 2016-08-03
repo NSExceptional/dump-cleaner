@@ -9,12 +9,13 @@
 #import "DCObject.h"
 
 
-@class DCProtocol, DCClass, DCProperty;
+@class DCProtocol, DCClass, DCProperty, DCMethod;
 
 /// Abstract base class for DCClass and DCProtocol
 @interface DCInterface : DCObject {
 @protected
     NSString *_orig;
+    NSString *_name;
     NSString *_importStatement;
 }
 
@@ -33,10 +34,20 @@
 // Internal use only //
 
 @property (nonatomic) NSMutableArray<DCProperty*> *properties;
-@property (nonatomic) NSMutableArray<NSString*>   *methods;
+@property (nonatomic) NSMutableArray<DCMethod*>   *methods;
 @property (nonatomic) NSMutableSet<NSString*>     *protocols;
 
+@property (nonatomic) NSArray<NSString*>          *conformedProtocols;
+@property (nonatomic) NSMutableSet<DCClass*>      *dependingClasses;
+@property (nonatomic) NSMutableSet<DCProtocol*>   *dependingProtocols;
+
+/// Sublcasses must call super
+- (BOOL)buildString;
+/// Sublclasses must override and not call super
+- (BOOL)parseOriginalString;
+
 @end
+
 
 static inline NSString * DCImportStatement(NSString *outputFolder, NSString *name) {
     NSString *framework = [outputFolder matchGroupAtIndex:1 forRegex:@"(\\w+)\\.framework/Headers"];

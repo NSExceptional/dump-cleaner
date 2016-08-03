@@ -9,10 +9,11 @@
 #import "DCClass.h"
 #import "DCProperty.h"
 #import "DCProtocol.h"
+#import "DCMethod.h"
 
 
 @interface DCClass ()
-@property (nonatomic) NSMutableArray<DCIVar*> *ivars;
+@property (nonatomic) NSMutableArray<DCVariable*> *ivars;
 @property (nonatomic) DCClass *dc_superclass;
 @end
 
@@ -24,31 +25,6 @@
     DCClass *class = [self withString:string];
     class->_categoryName = categoryName;
     return class;
-}
-
-- (id)initWithString:(NSString *)string {
-    self = [super initWithString:string];
-    if (self) {
-        _categoryName = [string matchGroupAtIndex:krCategory_name forRegex:krCategory_12];
-        if (!_categoryName) {
-            _superclassName = [string matchGroupAtIndex:krClass_superclass forRegex:krClass_123];
-        }
-        
-        // Find
-        [self findIVars];
-        
-        // Fix
-        [self removePropertyBackingIVars];
-        [self removePropertyMethods];
-        [self removeNSObjectMethodsAndProperties];
-        [self removeSuperclassMethods];
-        
-        // Store finished product to later recreate _string with dependencies
-        // MUST NOT USE string GETTER HERE
-        _orig = _string.copy;
-    }
-    
-    return self;
 }
 
 #pragma mark Public interface
@@ -121,10 +97,87 @@
 
 #pragma mark Searching
 
-- (void)findIVars {
-    self.ivars = [[self.string allMatchesForRegex:krIvarComponents_12 atIndex:0] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        return [DCIVar withString:object];
-    }].mutableCopy;
+- (BOOL)buildString {
+    [super buildString];
+    [_string appendFormat:@"\n\n@interface %@", _name];
+    
+    if (_categoryName) {
+        // Category
+        [_string appendFormat:@" (%@)", _categoryName];
+    }
+    else {
+        // Superclass
+        if (_superclassName) {
+            [_string appendFormat:@" : %@", _categoryName];
+        }
+        // Conformed protocols
+        if (self.conformedProtocols.count) {
+            [_string appendString:@"<"];
+            for (NSString *prot in self.conformedProtocols) {
+                [_string appendFormat:@"%@, ", prot];
+            }
+            [_string appendString:@">"];
+            [_string deleteCharactersInRange:NSMakeRange(_string.length-1, 1)];
+        }
+        // Ivars
+        if (self.ivars.count) {
+            [_string appendString:@"{\n"];
+            for (DCVariable *ivar in self.ivars) {
+                [_string appendFormat:@"    %@;\n", ivar.string];
+            }
+            [_string appendString:@"}"];
+        }
+    }
+    
+    // Properties and methods
+    [_string appendString:@"\n\n"];
+    for (DCProperty *property in self.properties)
+        [_string appendFormat:@"%@\n", property];
+    for (DCMethod *method in self.methods)
+        [_string appendFormat:@"%@\n", method];
+    
+    [_string appendString:@"@end\n"];
+    
+    return YES;
+}
+
+- (BOOL)parseOriginalString {
+    NSScanner *scanner = [NSScanner scannerWithString:_orig];
+    NSString *tmp = nil;
+    
+    ScanAssert([scanner scanString:@"@interface"]);
+    ScanAssert([scanner scanIdentifier:&tmp]);
+    _name = tmp; tmp = nil;
+    
+    if ([scanner scanString:@"("]) {
+        // Category name
+        ScanAssert([scanner scanIdentifier:&tmp]);
+        _categoryName = tmp; tmp = nil;
+        ScanAssert([scanner scanString:@")"])
+    } else {
+        // Superclass
+        if ([scanner scanString:@":"]) {
+            ScanAssert([scanner scanIdentifier:&tmp]);
+            _superclassName = tmp; tmp = nil;
+        }
+        // Conformed protocols
+        NSArray *protocols = nil;
+        if ([scanner scanProtocolConformanceList:&protocols]) {
+            self.conformedProtocols = protocols;
+        }
+        // IVars
+        NSArray *ivars = nil;
+        if ([scanner scanInstanceVariableList:&ivars]) {
+            [self.ivars addObjectsFromArray:ivars];
+        }
+    }
+    
+    ScanAssert([scanner scanInterfaceBody:^(NSArray<DCProperty *> *properties, NSArray<DCMethod *> *methods) {
+        [self.properties addObjectsFromArray:properties];
+        [self.methods addObjectsFromArray:methods];
+    } isProtocol:NO]);
+    
+    return YES;
 }
 
 - (void)removePropertyBackingIVars {

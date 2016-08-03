@@ -13,11 +13,6 @@
 
 @interface DCInterface ()
 
-@property (nonatomic) NSArray<NSString*>          *conformedProtocols;
-
-@property (nonatomic) NSMutableSet<DCClass*>    *dependingClasses;
-@property (nonatomic) NSMutableSet<DCProtocol*> *dependingProtocols;
-
 @end
 
 @implementation DCInterface
@@ -29,21 +24,17 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
-        _string       = string.mutableCopy;
-        _name         = [string matchGroupAtIndex:krClass_name    forRegex:krClass_123];
-        
         self.protocols          = [NSMutableSet set];
         self.dependingClasses   = [NSMutableSet set];
         self.dependingProtocols = [NSMutableSet set];
         
-        // Find
-        [self findProtocols];
-        [self findProperties];
-        [self findMethods];
+        if (!([self parseOriginalString] && [self buildString])) {
+            return nil;
+        }
         
         // Store finished product to later recreate _string with dependencies
         // MUST NOT USE string GETTER HERE
-        _orig = _string.copy;
+        //        _orig = _string.copy;
     }
     
     return self;
@@ -53,17 +44,10 @@
 
 - (NSString *)string {
     if (!_string) {
-        _string = [NSMutableString string];
-        
-        // Prepend imports
-        for (DCInterface *interface in @[self.dependingClasses, self.dependingProtocols].flattened)
-            [_string appendString:interface.importStatement];
-        
-        [_string appendString:@"\n\n"];
-        [_string appendString:_orig];
+        [self buildString];
     }
     
-#warning Use .copy if it won't affect runtime too badly
+    //#warning Use .copy if it won't affect runtime too badly
     return _string;
 }
 
@@ -114,19 +98,21 @@
 
 #pragma mark Searching
 
-- (void)findProtocols {
-    self.conformedProtocols = [self.string allMatchesForRegex:krClass_123 atIndex:krClass_conformed];
-    [self.protocols addObjectsFromArray:[self.string allMatchesForRegex:krProtocolType_1 atIndex:krProtocolType_protocol]];
+- (BOOL)buildString {
+    _string = [NSMutableString string];
+    
+    // TODO comments at the top of _string
+    
+    // Prepend imports
+    for (DCInterface *interface in @[self.dependingClasses, self.dependingProtocols].flattened)
+        [_string appendFormat:@"%@\n", interface.importStatement];
+    
+    return YES;
 }
 
-- (void)findProperties {
-    self.properties = [[self.string allMatchesForRegex:krProperty_12 atIndex:0] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        return [DCProperty withString:object];
-    }].mutableCopy;
-}
-
-- (void)findMethods {
-    self.methods = [self.string allMatchesForRegex:krMethod atIndex:0].mutableCopy;
+- (BOOL)parseOriginalString {
+    [NSException raise:NSGenericException format:@"Subclasses must override this method and not call super."];
+    return NO;
 }
 
 @end
