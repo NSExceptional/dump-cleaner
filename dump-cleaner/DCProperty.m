@@ -76,21 +76,7 @@
 #pragma mark Tests
 
 + (BOOL)test {
-    DCProperty *p = [DCProperty withString:@"@property( nonatomic,readonly, setter=food:)MYClass *food;"];
-    DCAssertEqualObjects(@"- ?\\(void\\)food:\\(id\\)\\w+", p.setterRegex);
-    DCAssertEqualObjects(@"MYClass", p.rawType);
-    DCAssertNil(p.getterRegex);
-    DCAssertFalse(p.isObject);
-    p.isObject = YES;
-    DCAssertEqualObjects(@"@property (retain, nonatomic, readonly, setter=food: ) MYClass *food;", p.string);
-    
-    p = [DCProperty withString:@"@property (nonatomic, copy) int food;"];
-    DCAssertTrue(p.isObject);
-    DCAssertEqualObjects(@"- ?\\(int\\)food;", p.getterRegex);
-    DCAssertEqualObjects(@"- ?\\(void\\)setFood:\\(int\\)\\w+", p.setterRegex);
-    DCAssertEqualObjects(p.value, p.string);
-    
-    return YES;
+    return NO;
 }
 
 #pragma mark Public interface
