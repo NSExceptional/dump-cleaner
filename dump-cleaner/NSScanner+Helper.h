@@ -11,6 +11,9 @@
 
 @interface NSScanner (Helper)
 
+@property (nonatomic, readonly) NSString *remainingString;
+@property (nonatomic, readonly) NSString *scannedString;
+
 @property (nonatomic, readonly) NSCharacterSet *variableNameCharacterSet;
 @property (nonatomic, readonly) NSCharacterSet *variableAttributesCharacterSet;
 @property (nonatomic, readonly) NSCharacterSet *alphaCharacterSet;

@@ -16,6 +16,15 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
 
 @implementation NSScanner (Helper)
 
+- (NSString *)remainingString {
+    NSInteger remaining = self.string.length - self.scanLocation;
+    return [self.string substringWithRange:NSMakeRange(self.scanLocation, remaining)];
+}
+
+- (NSString *)scannedString {
+    return [self.string substringToIndex:self.scanLocation];
+}
+
 - (NSCharacterSet *)variableNameCharacterSet {
     static NSCharacterSet *sharedCharacterSet = nil;
     static dispatch_once_t onceToken;

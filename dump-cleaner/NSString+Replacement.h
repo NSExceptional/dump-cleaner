@@ -14,3 +14,11 @@
 - (instancetype)stringByReplacingPattern:(NSString *)pattern with:(NSString *)replacement;
 
 @end
+
+
+@interface NSMutableString (Delete)
+
+- (void)deleteLastCharacter;
+- (void)deleteCharacter:(NSUInteger)idx;
+
+@end

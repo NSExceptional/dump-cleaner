@@ -16,3 +16,16 @@
 }
 
 @end
+
+
+@implementation NSMutableString (Delete)
+
+- (void)deleteLastCharacter {
+    [self deleteCharactersInRange:NSMakeRange(self.length-1, 1)];
+}
+
+- (void)deleteCharacter:(NSUInteger)idx {
+    [self deleteCharactersInRange:NSMakeRange(idx, 1)];
+}
+
+@end
