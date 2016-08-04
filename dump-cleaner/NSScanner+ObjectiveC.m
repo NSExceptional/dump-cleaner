@@ -159,15 +159,7 @@
     ScanPush();
     ScanBuilderInit();
     
-    BOOL needsPointer = NO;
-    
-    // "id" needs no pointer
-    if (ScanAppend(self scanString:@"id" intoString)) {
-    } else if (ScanAppend(self scanIdentifier)) {
-        needsPointer = YES;
-    } else {
-        return NO;
-    }
+    ScanAssertPop(ScanAppend(self scanString:@"id" intoString) || ScanAppend(self scanIdentifier))
     
     // Conformed protocols
     // '<'identifier[, identifier]*'>'
@@ -181,9 +173,7 @@
         ScanAssertPop(ScanAppend(self scanString:@">" intoString));
     }
     
-    // Scan for pointers and return NO if we needed them but did not find them.
-    // Check for pointers first because we can have more even if we don't need them.
-    ScanAssertPop(ScanAppend(self scanPointers) || !needsPointer);
+    ScanAppend(self scanPointers);
     
     *output = ScanBuilderString();
     return YES;
@@ -213,7 +203,7 @@
         } else {
             // Skip past comments and things like @optional if protocol
             static NSArray *protocolThings = StaticArray(protocolThings, @"@optional", @"@required");
-            didFind = isProtocol ? [self scanAny:protocolThings into:nil] : NO || [self scanIgnoredThing];
+            didFind = isProtocol ? [self scanAny:protocolThings into:nil] : NO || [self scanPastIgnoredThing];
         }
     }
     
@@ -276,7 +266,7 @@
 
 #pragma mark C types
 
-- (BOOL)scanIgnoredThing {
+- (BOOL)scanPastIgnoredThing {
     ScanPush();
     
     // Comments like this

@@ -28,7 +28,7 @@ typedef void(^InterfaceBodyBlock)(NSArray<DCProperty*> *properties, NSArray<DCMe
 - (BOOL)scanSelector:(NSString **)output;
 
 #pragma mark C types
-- (BOOL)scanIgnoredThing;
+- (BOOL)scanPastIgnoredThing;
 - (BOOL)scanVariable:(DCVariable **)output;
 - (BOOL)scanTypedefStructUnionOrEnum:(NSString **)output;
 - (BOOL)scanStructOrUnion:(NSString **)output;
