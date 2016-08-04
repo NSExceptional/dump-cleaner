@@ -454,23 +454,30 @@
 }
 
 - (BOOL)scanType:(NSString **)output {
-    static NSArray *basicTypes = StaticArray(basicTypes, @"void", @"double", @"float", @"long", @"int", @"short", @"char");
+    static NSArray *basicTypes = StaticArray(basicTypes, @"void", @"double", @"float", @"long", @"int", @"short", @"char",
+                                             @"NSInteger", @"NSUInteger", @"CGFloat");
+    static NSArray *complexTypes = StaticArray(complexTypes, @"struct", @"union");
     
     ScanPush();
     ScanBuilderInit();
     
-    // Scan for optional const / volatile, then for signed / unsigned
+    // Scan for optional static / const / volatile, then for signed / unsigned
+    ScanAppend_(self scanTypeMemoryQualifier);
+    ScanAppend_(self scanTypeMemoryQualifier);
     ScanAppend_(self scanTypeMemoryQualifier);
     ScanAppend_(self scanTypeQualifier);
     
-    // Then primitive types, then pointers and more consts
-    if (ScanAppend_(self scanAny:basicTypes into)) {
+    // Then primitive types, then pointers and more consts.
+    // Might also scan a (maybe anonymous) struct or union.
+    if (ScanAppend_(self scanAny:basicTypes into) || // Basic types
+        (ScanAppend_(self scanAny:complexTypes into) && ScanAppend_(self scanIdentifier)) || // "struct _NSRange"
+        ScanAppend_(self scanStructOrUnion)) { // Anonymous struct
         ScanAppend(self scanPointers);
         return YES;
     }
     else {
-        // Fallback to object types and structs
-        BOOL ret = [self scanObjectType:output] || [self scanStructOrUnion:output] || [self scanEnum:output];
+        // Fallback to object types and enums
+        BOOL ret = [self scanObjectType:output] || [self scanEnum:output];
         if (!ret) {
             ScanPop();
         }
