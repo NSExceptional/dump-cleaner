@@ -22,6 +22,9 @@
 /// Subclasses should override for testing
 + (BOOL)test;
 
+// Internal use only
+- (BOOL)buildString;
+
 /// Subclasses should override backed value to return the desired result
 @property (nonatomic, readonly) NSString *string;
 

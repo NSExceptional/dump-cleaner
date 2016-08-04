@@ -29,8 +29,7 @@
         _ivar          = variable;
         _attributes    = attrs.mutableCopy;
         _isObject      = _alreadyObject = ({
-            [attrs containsObject:@"copy"] || [attrs containsObject:@"retain"] ||
-            [attrs containsObject:@"assign"] || [variable.type isEqualToString:@"id"] ||
+            [attrs containsObject:@"copy"] || [attrs containsObject:@"retain"] || [variable.type isEqualToString:@"id"] ||
             ([variable.type hasPrefix:@"id"] && ![variable.type containsString:@"*"]);
         });
         
@@ -55,14 +54,6 @@
     }
     
     return self;
-}
-
-- (NSString *)string {
-    if (!_string) {
-        [self buildString];
-    }
-    
-    return _string;
 }
 
 - (NSString *)classType {
@@ -103,7 +94,7 @@
 
 #pragma mark Processing
 
-- (void)buildString {
+- (BOOL)buildString {
     _string = [NSMutableString stringWithString:@"@property "];
     // Property attributes
     if (_attributes.count) {
@@ -119,6 +110,7 @@
     }
     
     [_string appendFormat:@"%@ %@;", self.ivar.type, self.name];
+    return YES;
 }
 
 @end

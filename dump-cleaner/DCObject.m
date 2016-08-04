@@ -15,10 +15,18 @@
     return [[self alloc] initWithString:string];
 }
 
-- (NSString *)string { return _string.copy; }
+- (NSString *)string {
+    if (!_string) {
+        [self buildString];
+    }
+    
+    return _string;
+}
 
 - (id)initWithString:(NSString *)string { return nil; }
 
 + (BOOL)test { return NO; }
+
+- (BOOL)buildString { return NO; }
 
 @end

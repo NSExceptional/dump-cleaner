@@ -99,21 +99,20 @@
 
 #pragma mark Processing
 
-- (void)buildString {
+- (BOOL)buildString {
     _isPointer = [_type hasSuffix:@"*"];
     
     // Space if no pointer, no space if pointer
-    if (self.isPointer) {
-        _string = [NSMutableString stringWithFormat:@"%@%@;", _type, _name];
-    } else {
-        _string = [NSMutableString stringWithFormat:@"%@ %@;", _type, _name];
-    }
+    NSString *format = self.isPointer ? @"%@%@;" : @"%@ %@;";
+    _string = [NSMutableString stringWithFormat:format, _type, _name];
     
     _rawType = [_type componentsSeparatedByString:@" "].firstObject;
     _rawType = [_rawType stringByTrimmingCharactersInSet:[NSCharacterSet letterCharacterSet].invertedSet];
     if ([_rawType isEqualToString:@"struct"] || [_rawType isEqualToString:@"union"]) {
         _rawType = nil;
     }
+    
+    return YES;
 }
 
 @end
