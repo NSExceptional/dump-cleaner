@@ -8,8 +8,14 @@
 
 #import "DCObject.h"
 
+
 @interface DCMethod : DCObject
 
++ (instancetype)types:(NSArray<NSString*> *)types selector:(NSString *)selector argumentNames:(NSArray *)names instance:(BOOL)instance;
+
 @property (nonatomic, readonly) NSString *selectorString;
+@property (nonatomic, readonly) NSMutableArray<NSString*> *types;
+
+- (void)updateWithKnownStructs:(NSArray *)structNames;
 
 @end

@@ -84,30 +84,47 @@
     ScanPush();
     ScanBuilderInit();
     
+    NSMutableArray *types = [NSMutableArray array];
+    NSMutableArray *argNames = [NSMutableArray array];
+    
     // ('-'|'+') '(' [protocol-qualifier]<type>')'
-    static NSArray *prefixes = StaticArray(prefixes, @"-", @"+");
-    ScanAssert(ScanAppend_(self scanAny:prefixes into));
-    ScanAssertPop(ScanAppend(self scanString:@"(" intoString))
+    BOOL isInstanceMethod = [self scanString:@"-"];
+    ScanAssertPop(isInstanceMethod || [self scanString:@"+"]);
+    
+    ScanAssertPop([self scanString:@"("]);
     ScanAppend_(self scanProtocolQualifier);
-    ScanAssertPop(ScanAppend(self scanType) && ScanAppend(self scanString:@")" intoString));
+    ScanAssertPop(ScanAppend(self scanType) && [self scanString:@")"]);
+    [types addObject:__scanned.copy];
+    
+    // Scan builder will hold the selector
+    [__scanned setString:@""];
     
     // <identifier>(":("[protocol-qualifier]<type>')'[identifier])*
     BOOL complete = YES;
     ScanAssertPop(ScanAppend(self scanIdentifier));
     while (ScanAppend(self scanString:@":" intoString)) {
-        ScanAssertPop(ScanAppend(self scanString:@"(" intoString))
-        ScanAppend_(self scanProtocolQualifier);
-        ScanAssertPop(ScanAppend(self scanType) && ScanAppend(self scanString:@")" intoString));
+        // Scan parameter (protocol qualifier and type)
+        NSString *protocolQualifier = nil, *type = nil, *arg = nil;
+        ScanAssertPop([self scanString:@"("]);
+        [self scanProtocolQualifier:&protocolQualifier];
+        ScanAssertPop([self scanType:&type] && [self scanString:@")"]);
+        
+        // Add to types
+        if (protocolQualifier) {
+            type = [NSString stringWithFormat:@"%@ %@", protocolQualifier, type];
+        }
+        [types addObject:type];
         
         // Scan for parameter name and optional selector part
-        if (ScanAppend(self scanIdentifier)) {
+        if ([self scanIdentifier:&arg]) {
+            [argNames addObject:arg];
             // Will be NO if something scans, YES if none found.
             // If none found, we might come across another parameter
             // and this might execute again. `complete` is only used
             // when the loop exits because no ':' was found.
             // So we only encounter an error when a second identifier
             // was scanned but no required ':' was found.
-            complete = !ScanAppendFormat(self scanIdentifier, @" %@");
+            complete = !ScanAppend(self scanIdentifier); // Optional parameter label
         } else {
             complete = YES;
             break;
@@ -117,9 +134,9 @@
     ScanAssertPop(complete);
     
     [self scanPastClangAttribute];
-    ScanAssertPop(ScanAppend(self scanString:@";" intoString));
+    ScanAssertPop([self scanString:@";"]);
     
-    *output = ScanBuilderString();
+    *output = [DCMethod types:types selector:ScanBuilderString() argumentNames:argNames instance:isInstanceMethod];
     return YES;
 }
 
