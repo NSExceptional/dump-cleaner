@@ -333,6 +333,20 @@
     return YES;
 }
 
+- (BOOL)scanGlobalVariale:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    ScanAppend_(self scanString:@"extern" intoString);
+    ScanAssertPop(ScanAppend_(self scanType));
+    ScanAssertPop(ScanAppend(self scanIdentifier));
+    [self scanPastClangAttribute];
+    ScanAssertPop(ScanAppend(self scanString:@";" intoString));
+    
+    *output = ScanBuilderString();
+    return YES;
+}
+
 - (BOOL)scanTypedefStructUnionOrEnum:(NSString **)output {
     ScanPush();
     ScanBuilderInit();
