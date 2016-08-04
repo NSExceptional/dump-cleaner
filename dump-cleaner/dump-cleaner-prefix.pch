@@ -36,10 +36,10 @@
 #define DCTabbedFormat(...) [@"\t" stringByAppendingString:[NSString stringWithFormat:__VA_ARGS__]]
 #define DCTabbedMessage(message) [@"\t" stringByAppendingString:message]
 
-#define DCExitOnError(error) if (error) { DCLog(DCTabbedMessage(error.localizedDescription)); exit(1); }
+#define DCExitOnError(error) if (error) { DCLog(DCTabbedFormat(@"%@:%@\t%@", @__FILE__, @__LINE__, error.localizedDescription)); exit(1); }
 #define DCExitWithFormat(...) DCLog(DCTabbedFormat(__VA_ARGS__)); exit(1)
 #define DCExitWithMessage(message) DCLog(DCTabbedMessage(message)); exit(1)
-#define DCWriteError(error) if (error) { DCLog(DCTabbedMessage(error.localizedDescription)); }
+#define DCWriteError(error) if (error) { DCLog(DCTabbedFormat(@"%@:%@\t%@", @__FILE__, @__LINE__, error.localizedDescription)); }
 #define DCWriteFormat(...) DCLog(DCTabbedFormat(__VA_ARGS__))
 #define DCWriteMessage(message) DCLog(DCTabbedMessage(message))
 
@@ -52,9 +52,9 @@
 
 #define ScanPush() NSInteger start = self.scanLocation
 #define ScanPop() self.scanLocation = start
-#define ScanAssert(cond) if (!cond) { return NO; }
-#define ScanAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
-#define ScanVariableAssertPop(cond) if (!cond) { self.scanLocation = start; return NO; }
+#define ScanAssert(cond) if (!(cond)) { return NO; }
+#define ScanAssertPop(cond) if (!(cond)) { self.scanLocation = start; return NO; }
+#define ScanVariableAssertPop(cond) if (!(cond)) { self.scanLocation = start; return NO; }
 
 // Helper macros for building a string from multiple scans.
 #define ScanBuilderInit() NSMutableString *__scanned = [NSMutableString string]
