@@ -97,10 +97,10 @@
         NSString *attr = nil;
         do {
             // Regular attributes
-            if ([self scanAny:propAttrs into:&attr]) {
+            if ([self scanAny:propAttrs ensureKeyword:YES into:&attr]) {
             } else {
                 // getter= / setter= attributes
-                ScanAssertPop([self scanAny:propSelectors into:&attr] && [self scanString:@"="]);
+                ScanAssertPop([self scanAny:propSelectors ensureKeyword:YES into:&attr] && [self scanString:@"="]);
                 NSString *selector = nil;
                 ScanAssertPop([self scanSelector:&selector]);
                 attr = [attr stringByAppendingFormat:@"=%@", selector];
@@ -243,7 +243,7 @@
         } else {
             // Skip past comments and things like @optional if protocol
             static NSArray *protocolThings = StaticArray(protocolThings, @"@optional", @"@required");
-            didFind = isProtocol ? [self scanAny:protocolThings into:nil] : NO || [self scanPastIgnoredThing];
+            didFind = isProtocol ? [self scanAny:protocolThings ensureKeyword:YES into:nil] : NO || [self scanPastIgnoredThing];
         }
     }
     
@@ -279,7 +279,7 @@
     NSMutableArray *ivars = [NSMutableArray array];
     DCVariable *tmp = nil;
     
-    while ([self scanAny:ivarQualifiers into:nil] || [self scanVariable:&tmp]) {
+    while ([self scanAny:ivarQualifiers ensureKeyword:YES into:nil] || [self scanVariable:&tmp]) {
         if (tmp) {
             [ivars addObject:tmp];
             tmp = nil;
@@ -486,17 +486,17 @@
         qualifiers = @[@"const", @"volatile", @"static"];
     });
     
-    return [self scanAny:qualifiers into:output];
+    return [self scanAny:qualifiers ensureKeyword:YES into:output];
 }
 
 - (BOOL)scanTypeQualifier:(NSString **)output {
     static NSArray *qualifiers = StaticArray(qualifiers, @"signed", @"unsigned", @"long");
-    return [self scanAny:qualifiers into:output];
+    return [self scanAny:qualifiers ensureKeyword:YES into:output];
 }
 
 - (BOOL)scanProtocolQualifier:(NSString **)output {
     static NSArray *qualifiers = StaticArray(qualifiers, @"in", @"out", @"inout", @"bycopy", @"byref", @"oneway");
-    return [self scanAny:qualifiers into:output];
+    return [self scanAny:qualifiers ensureKeyword:YES into:output];
 }
 
 - (BOOL)scanType:(NSString **)output {
@@ -515,8 +515,8 @@
     
     // Then primitive types, then pointers and more consts.
     // Might also scan a (maybe anonymous) struct or union.
-    if (ScanAppend_(self scanAny:basicTypes into) || // Basic types
-        (ScanAppend_(self scanAny:complexTypes into) && ScanAppend_(self scanIdentifier)) || // "struct _NSRange"
+    if (ScanAppend_(self scanAny:basicTypes ensureKeyword:YES into) || // Basic types
+        (ScanAppend_(self scanAny:complexTypes ensureKeyword:YES into) && ScanAppend_(self scanIdentifier)) || // "struct _NSRange"
         ScanAppend_(self scanStructOrUnion)) { // Anonymous struct
         ScanAppend(self scanPointers);
         return YES;

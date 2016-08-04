@@ -25,7 +25,7 @@
 - (BOOL)scanToString:(NSString *)string;
 - (BOOL)scanCharacters:(NSCharacterSet *)characters;
 - (BOOL)scanToCharacters:(NSCharacterSet *)characters;
-- (BOOL)scanAny:(NSArray<NSString*> *)strings into:(NSString **)output;
+- (BOOL)scanAny:(NSArray<NSString *> *)strings ensureKeyword:(BOOL)keyword into:(NSString **)output;
 - (BOOL)scanExpression:(NSString **)output;
 - (BOOL)scanNumberLiteral:(NSString **)output;
 - (BOOL)scanToStringOnSameLine:(NSString *)string;

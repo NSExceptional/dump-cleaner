@@ -114,11 +114,18 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     return [self scanUpToCharactersFromSet:characters intoString:nil];
 }
 
-- (BOOL)scanAny:(NSArray<NSString *> *)strings into:(NSString **)output {
-    for (NSString *string in strings)
-        if ([self scanString:string intoString:output]) {
+- (BOOL)scanAny:(NSArray<NSString *> *)strings ensureKeyword:(BOOL)keyword into:(NSString **)output {
+    ScanPush();
+    for (NSString *string in strings) {
+        if ([self scanString:string intoString:output] && (!keyword ||
+            ![self.variableNameCharacterSet characterIsMember:[self.string characterAtIndex:self.scanLocation]])) {
             return YES;
         }
+    }
+    
+    ScanPop();
+    if (output) { *output = nil; }
+    
     return NO;
 }
 
