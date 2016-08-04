@@ -24,9 +24,13 @@
 - (id)initWithString:(NSString *)string {
     self = [super init];
     if (self) {
+        _orig = string;
+        self.methods            = [NSMutableArray array];
+        self.properties         = [NSMutableArray array];
         self.protocols          = [NSMutableSet set];
         self.dependingClasses   = [NSMutableSet set];
         self.dependingProtocols = [NSMutableSet set];
+        
         
         if (!([self parseOriginalString] && [self buildString])) {
             return nil;
@@ -102,8 +106,9 @@
     // TODO comments at the top of _string data
     
     // Prepend imports
-    for (DCInterface *interface in @[self.dependingClasses, self.dependingProtocols].flattened)
-        [_string appendFormat:@"%@\n", interface.importStatement];
+    for (NSSet *set in @[self.dependingClasses, self.dependingProtocols])
+        for (DCInterface *interface in set)
+            [_string appendFormat:@"%@\n", interface.importStatement];
     
     return YES;
 }

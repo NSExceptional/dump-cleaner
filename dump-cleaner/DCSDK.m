@@ -57,6 +57,8 @@ typedef void (^DCStructBlock)(NSString *structName);
         _dumpedProtocols   = [NSMutableDictionary dictionary];
         _dumpedStructs     = [NSMutableSet set];
         
+        [NSScanner setExistingProtocolPools:_SDKProtocols dumped:_dumpedProtocols];
+        
         // Assert that SDK exists
         BOOL isDirectory = NO;
         if (!([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDirectory] && isDirectory)) {
@@ -143,7 +145,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         // Get headers in the given framework folder
         NSString *frameworkPath = [frameworksFolder stringByAppendingPathComponent:framework];
         NSArray *headers = [[manager filesInDirectoryAtPath:frameworkPath recursive:YES] map:^id(NSString *item, NSUInteger idx, BOOL *discard) {
-            *discard = ![item hasSuffix:@".h"];
+            *discard = ![item.pathExtension isEqualToString:@"h"];
             return item;
         }];
         
@@ -211,7 +213,6 @@ typedef void (^DCStructBlock)(NSString *structName);
         [thing updateWithKnownClasses:self.dumpedClasses.allValues];
         [thing updateWithKnownProtocols:self.SDKProtocols.allValues];
         [thing updateWithKnownProtocols:self.dumpedProtocols.allValues];
-        [thing updateWithKnownStructs:allStructs];
         
         // Actually write
         NSError *error = nil;
@@ -311,6 +312,7 @@ typedef void (^DCStructBlock)(NSString *structName);
 }
 
 - (void)processDumpedHeader:(NSString *)path {
+    NSParameterAssert(path);
     [self processHeader:path classes:^(DCClass *classOrCategory) {
         // Make it a class if it is a private class, category if it is a public class.
         // We will find methods and properties later
@@ -318,7 +320,7 @@ typedef void (^DCStructBlock)(NSString *structName);
             NSParameterAssert(self.dumpedClasses[classOrCategory.name] == nil);
             self.dumpedClasses[classOrCategory.name] = classOrCategory;
         } else {
-            classOrCategory = [DCClass withString:classOrCategory.string categoryName:@"AppleInternal"];
+            classOrCategory.categoryName = @"AppleInternal";
             NSParameterAssert(self.dumpedCategories[classOrCategory.categoryKey] == nil);
             self.dumpedCategories[classOrCategory.categoryKey] = classOrCategory;
         }

@@ -48,7 +48,7 @@
             [_string appendFormat:@"%@, ", prot];
         }
         [_string appendString:@">"];
-        [_string deleteCharactersInRange:NSMakeRange(_string.length-1, 1)];
+        [_string deleteLastCharacter];
     }
     
     // Properties and methods
@@ -65,6 +65,7 @@
 }
 
 - (BOOL)parseOriginalString {
+    NSAssert(_orig != nil, @"_orig should be initialized here");
     NSScanner *scanner = [NSScanner scannerWithString:_orig];
     NSString *tmp = nil;
     
