@@ -17,6 +17,15 @@
 
 @implementation NSScanner (ObjectiveC)
 
+static NSMutableDictionary<NSString*, DCProtocol*> *SDKProtocols;
+static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
++ (void)setExistingProtocolPools:(NSMutableDictionary<NSString *,DCProtocol *> *)SDKs
+                          dumped:(NSMutableDictionary<NSString *,DCProtocol *> *)dumped {
+    NSParameterAssert(SDKs); NSParameterAssert(dumped);
+    SDKProtocols    = SDKs;
+    dumpedProtocols = dumped;
+}
+
 #pragma mark Objective-C things
 
 - (BOOL)parseHeader:(ParseCallbackBlock)completion {
@@ -31,9 +40,13 @@
     // Scan past comments and other crap, look for interfaces and struct/union declarations
     // Skip untypedef'd structs and unions, skip all enums and forward declarations,
     // skip all global variables.
-    while ([self scanPastIgnoredThing] || [self scanClassOrProtocolForwardDeclaration:nil] ||
-           [self scanStructOrUnion:nil] || [self scanEnum:nil] || [self scanGlobalVariale:nil] ||
-           [self scanInterface:&tmp] || [self scanTypedefStructUnionOrEnum:&structt]) {
+    while ([self scanPastIgnoredThing] ||
+           [self scanClassOrProtocolForwardDeclaration:nil] ||
+           [self scanStructOrUnion:nil] ||
+           [self scanEnum:nil] ||
+           [self scanGlobalVariale:nil] ||
+           [self scanInterface:&tmp] ||
+           [self scanTypedefStructUnionOrEnum:&structt]) {
         didRunOnce = YES;
         
         while ([self scanPastIgnoredThing]) { }
@@ -47,8 +60,8 @@
             structt = nil;
             [name replaceOccurrencesOfString:@"typedef " withString:@"" options:0 range:NSMakeRange(0, name.length)];
             if ([name hasPrefix:@"struct"]) {
-                [name replaceOccurrencesOfString:@"struct " withString:@"" options:0 range:NSMakeRange(0, name.length)];
-                [structNames addObject:[name componentsSeparatedByString:@" "].firstObject];
+                [name deleteLastCharacter];
+                [structNames addObject:[name componentsSeparatedByString:@" "].lastObject];
             }
         }
     }
@@ -65,13 +78,22 @@
         cls = [DCClass class];
     } else if ([self scanString:@"@protocol"]) {
         cls = [DCProtocol class];
+        
+        // Check whether or not we need to skip
+        // this protocol entirely.
+        NSString *name = nil;
+        [self scanIdentifier:&name];
+        if ([SDKProtocols.allKeys containsObject:name] ||
+            [dumpedProtocols.allKeys containsObject:name]) {
+            ScanAssertPop([self scanToString:@"@end"]);
+            return YES;
+        }
     }
     
     if (cls) {
         ScanAssertPop([self scanToString:@"@end"]);
         [self scanString:@"@end"];
-        NSString *string = [self.string substringWithRange:NSMakeRange(start, self.scanLocation)];
-        DCInterface *interface = [cls withString:string];
+        DCInterface *interface = [cls withString:[self.scannedString substringFromIndex:start]];
         
         if (interface) {
             *output = interface;
@@ -338,7 +360,8 @@
     } else {
         NSString *identifier = nil;
         [self scanIdentifier:&identifier];
-        return [identifier hasPrefix:@"NS_"]; // Only way I know how to check for valid macros rn
+        // Only way I know how to check for valid macros rn
+        ScanAssertPop([identifier hasPrefix:@"NS_"]);
     }
     
     return YES;
@@ -354,6 +377,12 @@
     ScanAppend_(self scanTypeMemoryQualifier);
     ScanAppend_(self scanTypeQualifier);
     ScanAssertPop(ScanAppend(self scanType) && [self scanIdentifier:&identifier]);
+    
+    // Static arrays
+    if (ScanAppend(self scanString:@"[" intoString)) {
+        ScanAssertPop(ScanAppend(self scanNumberLiteral) &&
+                      ScanAppend(self scanString:@"]" intoString));
+    }
     
     // Skip past clang attributes and macros to the semicolon
     [self scanPastClangAttribute];
@@ -519,6 +548,11 @@
         (ScanAppend_(self scanAny:complexTypes ensureKeyword:YES into) && ScanAppend_(self scanIdentifier)) || // "struct _NSRange"
         ScanAppend_(self scanStructOrUnion)) { // Anonymous struct
         ScanAppend(self scanPointers);
+        
+        if ([__scanned hasSuffix:@" "]) {
+            [__scanned deleteLastCharacter];
+        }
+        ScanBuilderWrite(output);
         return YES;
     }
     else {

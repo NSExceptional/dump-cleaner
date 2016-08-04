@@ -14,8 +14,12 @@ typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *st
 
 @interface NSScanner (ObjectiveC)
 
++ (void)setExistingProtocolPools:(NSMutableDictionary<NSString*, DCProtocol*> *)SDKs
+                          dumped:(NSMutableDictionary<NSString*, DCProtocol*> *)dumped;
+
 #pragma mark Objective-C things
 - (BOOL)parseHeader:(ParseCallbackBlock)completion;
+/// output is not guaranteed to be set even if YES is returned.
 - (BOOL)scanInterface:(DCInterface **)output;
 - (BOOL)scanProperty:(DCProperty **)output;
 - (BOOL)scanMethod:(DCMethod **)output;

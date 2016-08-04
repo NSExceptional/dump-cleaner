@@ -48,7 +48,7 @@
 }
 
 - (NSArray *)flattened {
-    return [self valueForKeyPath:@"@unionOfOfArrays.self"];
+    return [self valueForKeyPath:@"@unionOfArrays.self"];
 }
 
 @end
