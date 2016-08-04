@@ -10,10 +10,12 @@
 
 @class DCVariable, DCProperty, DCMethod, DCClass, DCProtocol, DCInterface;
 typedef void(^InterfaceBodyBlock)(NSArray<DCProperty*> *properties, NSArray<DCMethod*> *methods);
+typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *structNames);
 
 @interface NSScanner (ObjectiveC)
 
 #pragma mark Objective-C things
+- (BOOL)parseHeader:(ParseCallbackBlock)completion;
 - (BOOL)scanInterface:(DCInterface **)output;
 - (BOOL)scanProperty:(DCProperty **)output;
 - (BOOL)scanMethod:(DCMethod **)output;

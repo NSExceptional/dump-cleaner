@@ -19,6 +19,44 @@
 
 #pragma mark Objective-C things
 
+- (BOOL)parseHeader:(ParseCallbackBlock)completion {
+    NSParameterAssert(self.string.length); NSParameterAssert(completion);
+    
+    NSMutableArray *interfaces  = [NSMutableArray array];
+    NSMutableArray *structNames = [NSMutableArray array];
+    DCInterface *tmp  = nil;
+    NSString *structt = nil;
+    BOOL didRunOnce   = NO;
+    
+    // Scan past comments and other crap, look for interfaces and struct/union declarations
+    // Skip untypedef'd structs and unions, skip all enums and forward declarations,
+    // skip all global variables.
+    while ([self scanPastIgnoredThing] || [self scanClassOrProtocolForwardDeclaration:nil] ||
+           [self scanStructOrUnion:nil] || [self scanEnum:nil] || [self scanGlobalVariale:nil] ||
+           [self scanInterface:&tmp] || [self scanTypedefStructUnionOrEnum:&structt]) {
+        didRunOnce = YES;
+        
+        while ([self scanPastIgnoredThing]) { }
+        
+        if (tmp) {
+            [interfaces addObject:tmp];
+            tmp = nil;
+        }
+        if (structt) {
+            NSMutableString *name = structt.mutableCopy;
+            structt = nil;
+            [name replaceOccurrencesOfString:@"typedef " withString:@"" options:0 range:NSMakeRange(0, name.length)];
+            if ([name hasPrefix:@"struct"]) {
+                [name replaceOccurrencesOfString:@"struct " withString:@"" options:0 range:NSMakeRange(0, name.length)];
+                [structNames addObject:[name componentsSeparatedByString:@" "].firstObject];
+            }
+        }
+    }
+    
+    completion(interfaces, structNames);
+    return didRunOnce;
+}
+
 - (BOOL)scanInterface:(DCInterface **)output {
     ScanPush();
     
