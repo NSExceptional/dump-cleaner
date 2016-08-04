@@ -32,7 +32,8 @@
 - (NSString *)outputLocation {
     if (_outputDirectory) {
         if (self.categoryName) {
-            return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@+%@.h", self.name, self.categoryName]];
+            NSString *filename = [NSString stringWithFormat:@"%@+%@.h", self.name, self.categoryName];
+            return [_outputDirectory stringByAppendingPathComponent:filename];
         }
         
         return [_outputDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.h", self.name]];
@@ -188,26 +189,22 @@
 }
 
 - (void)removePropertyMethods {
-    self.methods = [self.methods map:^id(DCMethod *method, NSUInteger idx, BOOL *discard) {
+    [self.methods filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(DCMethod *method, NSDictionary *bindings) {
         for (DCProperty *property in self.properties) {
             if ([method.selectorString isEqualToString:property.getterSelector] ||
                 [method.string isEqualToString:property.setterSelector]) {
-                *discard = YES;
-                return nil;
+                return NO;
             }
         }
-        
-        return method;
-    }].mutableCopy;
+        return YES;
+    }]];
 }
 
 - (void)removeNSObjectMethodsAndProperties {
     NSArray *selectors = @[@"class", @"hash", @"self", @"superclass", @"isEqual:"];
-    self.methods = [self.methods map:^id(DCMethod *method, NSUInteger idx, BOOL *discard) {
-        if ([selectors containsObject:method.selectorString])
-            *discard = YES;
-        return method;
-    }].mutableCopy;
+    [self.methods filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(DCMethod *method, NSDictionary *bindings) {
+        return ![selectors containsObject:method.selectorString];
+    }]];
 }
 
 - (void)removeSuperclassMethods {

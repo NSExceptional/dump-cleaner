@@ -27,7 +27,8 @@
 @property (nonatomic, readonly) NSString *outputLocation;
 @property (nonatomic, readonly) NSString *importStatement;
 
-// Assumes output directory will end with "Foo.framework/Headers"
+/// Assumes output directory will end with "Foo.framework/Headers"
+/// Subclasses should override
 - (void)setOutputDirectory:(NSString *)outputDirectory;
 
 

@@ -9,10 +9,10 @@
 #import "DCClass.h"
 #import "DCProtocol.h"
 #import "DCProperty.h"
+#import "DCMethod.h"
 
 
 @interface DCInterface ()
-
 @end
 
 @implementation DCInterface
@@ -69,24 +69,29 @@
     
     // Update object properties
     for (DCProperty *property in nonObjectProperties) {
-        BOOL isObject = [classNames containsObject:property.rawType];
+        BOOL isObject = [classNames containsObject:property.ivar.rawType];
         property.isObject = isObject;
         
         // Add class dependency
         if (isObject) {
             for (DCClass *class in classes) {
-                if ([class.name isEqualToString:property.rawType]) {
+                if ([class.name isEqualToString:property.ivar.rawType]) {
                     [self.dependingClasses addObject:class];
                     break;
                 }
             }
         }
     }
+    
+    // No need to check method type dependencies because
+    // all method arguemnt types will be `id` at most.
 }
 
 - (void)updateWithKnownStructs:(NSArray *)structNames {
     for (DCProperty *property in self.properties)
         [property updateWithKnownStructs:structNames];
+    for (DCMethod *method in self.methods)
+        [method updateWithKnownStructs:structNames];
 }
 
 - (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols {
@@ -101,7 +106,7 @@
 - (BOOL)buildString {
     _string = [NSMutableString string];
     
-    // TODO comments at the top of _string
+    // TODO comments at the top of _string data
     
     // Prepend imports
     for (DCInterface *interface in @[self.dependingClasses, self.dependingProtocols].flattened)
