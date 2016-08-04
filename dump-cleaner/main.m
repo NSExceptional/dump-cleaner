@@ -38,10 +38,11 @@ int main(int argc, const char * argv[]) {
         
         NSArray *args = DCArgsFromCharPtr(argv, argc);
 #else
-        NSArray *args = @[@".", @"/Users/tantan/Desktop/dumped/System/Library/Frameworks", @"/Users/tantan/Desktop/cleaned"];
+        NSArray *args = @[@".", @"/Users/tantan/Desktop/dumped/System/Library/Frameworks", @"/Users/tantan/Desktop/"];
 #endif
         NSString *inputLoc  = args[args.count-2];
         NSString *outputLoc = args[args.count-1];
+        
         //        NSString *flags     = DCGetFlags(args.copy);
         //        DCOptions options = DCOptionsFromString(flags);
         
@@ -82,7 +83,7 @@ void chooseFromExistingFrameworks(NSString *inputLoc, NSString *outputLoc) {
     [progress start];
     
     // Start processing
-    DCSDK *sdk = [DCSDK SDKAtPath:SDKs[SDKs.allKeys[choice]]];
+    DCSDK *sdk = [DCSDK SDKAtPath:SDKs[SDKs.allKeys[choice-1]]];
     [sdk processFrameworksInDirectory:inputLoc andOutputTo:outputLoc];
     [progress stop];
     DCLog(@"Done");
@@ -156,7 +157,7 @@ NSArray * DCFilesInDirectory(NSString *path, BOOL recursive) {
     contents = full.copy;
     
     NSMutableArray *files = [contents filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSString *item, NSDictionary<NSString *,id> *bindings) {
-        return !DCPathIsDirectory(item) && [item hasSuffix:@".h"];
+        return !DCPathIsDirectory(item) && [item.pathExtension isEqualToString:@"h"];
     }]].mutableCopy;
     
     if (recursive) {

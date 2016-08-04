@@ -117,6 +117,10 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSFileManager *manager = [NSFileManager defaultManager];
     NSError *error = nil;
     NSArray *frameworks = [manager contentsOfDirectoryAtPath:frameworksFolder error:&error];
+    frameworks = [frameworks map:^id(NSString *framework, NSUInteger idx, BOOL *discard) {
+        *discard = ![framework.pathExtension isEqualToString:@"framework"];
+        return framework;
+    }];
     
     DCExitOnError(error);
     
@@ -192,8 +196,8 @@ typedef void (^DCStructBlock)(NSString *structName);
     DCExitOnError(error);
     
     // Set output folder for each dumped thing
-    for (NSArray *array in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols])
-        for (DCInterface *thing in array)
+    for (NSMutableDictionary *dict in @[self.dumpedClasses, self.dumpedCategories, self.dumpedProtocols])
+        for (DCInterface *thing in dict.allValues)
             [thing setOutputDirectory:directory];
 }
 
@@ -202,7 +206,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSMutableSet *filteredDumps = self.dumpedStructs.mutableCopy;
     [filteredDumps minusSet:self.SDKStructs];
     _dumpedStructs = filteredDumps;
-    NSArray *allStructs = @[self.SDKStructs.allObjects, self.dumpedStructs.allObjects].flattened;
+    //    NSArray *allStructs = @[self.SDKStructs.allObjects, self.dumpedStructs.allObjects].flattened;
     
     // Remove existing protocols
     [self.dumpedProtocols removeObjectsForKeys:self.SDKProtocols.allKeys];
@@ -349,11 +353,20 @@ typedef void (^DCStructBlock)(NSString *structName);
               structs:(DCStructBlock)structs {
     
     NSError *error = nil;
-    NSString *header = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
+    NSString *header = [NSString stringWithContentsOfFile:path usedEncoding:NULL error:&error];
+    // Some SDK files are in this encoding and the above does not work for some reason
+    if (error) {
+        NSError *error2 = nil;
+        header = [NSString stringWithContentsOfFile:path encoding:NSMacOSRomanStringEncoding error:&error2];
+        if (header) {
+            error = nil;
+        }
+    }
     DCExitOnError(error);
     
     [[DCProgressBar currentProgress] verbose2:path];
     
+    NSAssert(header != nil, @"Header contents should be initialized here");
     NSScanner *scanner = [NSScanner scannerWithString:header];
     BOOL success = [scanner parseHeader:^(NSArray<DCInterface *> *interfaces, NSArray *structNames) {
         for (DCInterface *interface in interfaces) {
