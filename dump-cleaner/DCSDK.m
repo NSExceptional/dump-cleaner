@@ -352,28 +352,26 @@ typedef void (^DCStructBlock)(NSString *structName);
     
     [[DCProgressBar currentProgress] verbose2:path];
     
-    // Classes
-    for (NSTextCheckingResult *match in [header matchesForRegex:krClassDefinition]) {
-        NSString *string = [header substringWithRange:match.range];
-        classes([DCClass withString:string]);
-    }
+    NSScanner *scanner = [NSScanner scannerWithString:header];
+    BOOL success = [scanner parseHeader:^(NSArray<DCInterface *> *interfaces, NSArray *structNames) {
+        for (DCInterface *interface in interfaces) {
+            if ([interface class] == [DCClass class]) {
+                if ([(DCClass*)interface categoryName]) {
+                    categories((id)interface);
+                } else {
+                    classes((id)interface);
+                }
+            } else if ([interface class] == [DCProtocol class]) {
+                protocols((id)interface);
+            }
+        }
+        
+        for (NSString *name in structNames)
+            structs(name);
+    }];
     
-    // Categories
-    for (NSTextCheckingResult *match in [header matchesForRegex:krCategoryDefinition]) {
-        NSString *string = [header substringWithRange:match.range];
-        categories([DCClass withString:string]);
-    }
-    
-    // Protocols
-    for (NSTextCheckingResult *match in [header matchesForRegex:krProtocolDefinition]) {
-        NSString *string = [header substringWithRange:match.range];
-        protocols([DCProtocol withString:string]);
-    }
-    
-    // Structs
-    for (NSTextCheckingResult *match in [header matchesForRegex:krStructUnknown_1_2]) {
-        NSString *name = [header substringWithRange:[match rangeAtIndex:match.numberOfRanges-1]]; // -1 will be the typedef if 3 or the name if 2
-        structs(name);
+    if (!success) {
+        DCExitWithFormat(@"Unable to process header: %@", path);
     }
 }
 
