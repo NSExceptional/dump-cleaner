@@ -174,7 +174,9 @@
     [self scanPastClangAttribute];
     ScanAssertPop([self scanString:@";"]);
     
-    *output = [DCMethod types:types selector:ScanBuilderString() argumentNames:argNames instance:isInstanceMethod];
+    if (output) {
+        *output = [DCMethod types:types selector:__scanned argumentNames:argNames instance:isInstanceMethod];
+    }
     return YES;
 }
 
@@ -189,7 +191,7 @@
     }
     
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -213,7 +215,7 @@
     
     ScanAppend(self scanPointers);
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -298,7 +300,7 @@
         ScanAppend(self scanIdentifier);
     }
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -357,7 +359,9 @@
     [self scanPastClangAttribute];
     ScanAssertPop([self scanString:@";"]);
     
-    *output = [DCVariable type:ScanBuilderString() name:identifier];
+    if (output) {
+        *output = [DCVariable type:__scanned name:identifier];
+    }
     return YES;
 }
 
@@ -371,7 +375,7 @@
     [self scanPastClangAttribute];
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -390,7 +394,7 @@
     
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -412,7 +416,7 @@
         }
     } while (!ScanAppendFormat(self scanString:@"}" intoString, @"\n%@"));
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -443,7 +447,7 @@
     } while (ScanAppend_(self scanString:@"," intoString));
     ScanAssertPop(ScanAppend(self scanString:@"}" intoString));
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -461,7 +465,7 @@
     [self scanCharacters:self.variableAttributesCharacterSet];
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -536,7 +540,7 @@
     while (ScanAppend(self scanString:@"*" intoString) || (!hasMemoryQualifier && ScanAppend_(self scanTypeMemoryQualifier))) {}
     
     if (__scanned.length) {
-        *output = ScanBuilderString();
+        ScanBuilderWrite(output);
         return YES;
     }
     

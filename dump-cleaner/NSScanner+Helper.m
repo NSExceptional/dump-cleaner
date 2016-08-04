@@ -155,7 +155,7 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
         ScanAppend(self scanString:@"f" intoString);
     }
     
-    *output = ScanBuilderString();
+    ScanBuilderWrite(output);
     return YES;
 }
 

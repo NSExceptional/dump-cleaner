@@ -58,7 +58,7 @@
 
 // Helper macros for building a string from multiple scans.
 #define ScanBuilderInit() NSMutableString *__scanned = [NSMutableString string]
-#define ScanBuilderString() __scanned
+#define ScanBuilderWrite(output) if (output) { *output = __scanned; }
 #define ScanAppendFormat(scan, format) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if (r){[__scanned appendFormat:format, __tmp];} r; })
 #define ScanAppend(scan) ({ NSString *__tmp = nil; BOOL r = [scan:&__tmp]; if(r){[__scanned appendString:__tmp];} r; })
 #define ScanAppend_(scan) ScanAppendFormat(scan, @"%@ ")
