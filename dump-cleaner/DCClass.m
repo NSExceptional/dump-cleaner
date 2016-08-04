@@ -21,10 +21,9 @@
 
 #pragma mark Initializers
 
-+ (instancetype)withString:(NSString *)string categoryName:(NSString *)categoryName {
-    DCClass *class = [self withString:string];
-    class->_categoryName = categoryName;
-    return class;
+- (id)initWithString:(NSString *)string {
+    _ivars = [NSMutableArray array];
+    return [super initWithString:string];
 }
 
 #pragma mark Public interface
@@ -87,13 +86,6 @@
     }
     
     [super updateWithKnownClasses:classes];
-}
-
-- (void)updateWithKnownStructs:(NSArray *)structNames {
-    [super updateWithKnownStructs:structNames];
-    
-    for (DCVariable *ivar in self.ivars)
-        [ivar updateWithKnownStructs:structNames];
 }
 
 #pragma mark Searching

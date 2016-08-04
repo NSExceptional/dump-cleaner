@@ -16,6 +16,4 @@
 @property (nonatomic, readonly) NSString *selectorString;
 @property (nonatomic, readonly) NSMutableArray<NSString*> *types;
 
-- (void)updateWithKnownStructs:(NSArray *)structNames;
-
 @end

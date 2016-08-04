@@ -26,6 +26,4 @@
 @property (nonatomic, readonly) DCVariable *ivar;
 @property (nonatomic, readonly) NSString *name;
 
-- (void)updateWithKnownStructs:(NSArray *)structNames;
-
 @end

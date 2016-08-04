@@ -78,20 +78,6 @@
     _string = nil;
 }
 
-- (void)updateWithKnownStructs:(NSArray *)structNames {
-    if ([self.ivar.type hasPrefix:@"struct"]) {
-        NSString *structName = [self.ivar.type componentsSeparatedByString:@" "][1];
-        assert(structName);
-        for (NSString *name in structNames) {
-            if ([structName isEqualToString:name]) {
-                self.ivar.type = name;
-                _string = nil;
-                break;
-            }
-        }
-    }
-}
-
 #pragma mark Processing
 
 - (BOOL)buildString {

@@ -81,8 +81,4 @@
     return YES;
 }
 
-- (void)updateWithKnownStructs:(NSArray *)structNames {
-    // I'm not sure this is necessary anymore
-}
-
 @end

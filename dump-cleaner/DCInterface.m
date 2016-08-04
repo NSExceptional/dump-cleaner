@@ -87,13 +87,6 @@
     // all method arguemnt types will be `id` at most.
 }
 
-- (void)updateWithKnownStructs:(NSArray *)structNames {
-    for (DCProperty *property in self.properties)
-        [property updateWithKnownStructs:structNames];
-    for (DCMethod *method in self.methods)
-        [method updateWithKnownStructs:structNames];
-}
-
 - (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols {
     NSMutableSet *dependencies = [NSMutableSet setWithArray:protocols];
     [dependencies intersectSet:self.protocols];

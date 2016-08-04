@@ -11,9 +11,7 @@
 
 @interface DCClass : DCInterface
 
-+ (instancetype)withString:(NSString *)string categoryName:(NSString *)categoryName;
-
-@property (nonatomic, readonly) NSString *categoryName;
+@property (nonatomic) NSString *categoryName;
 @property (nonatomic, readonly) NSString *categoryKey; // name + category name
 
 @property (nonatomic, readonly) NSString *superclassName;

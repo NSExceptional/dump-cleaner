@@ -20,7 +20,6 @@
 }
 
 - (void)updateWithKnownClasses:(NSArray<DCClass*> *)classes;
-- (void)updateWithKnownStructs:(NSArray *)structNames;
 - (void)updateWithKnownProtocols:(NSArray<DCProtocol*> *)protocols;
 
 @property (nonatomic, readonly) NSString *name;

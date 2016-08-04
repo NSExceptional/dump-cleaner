@@ -78,15 +78,6 @@
 
 #pragma mark Public interface
 
-- (void)updateWithKnownStructs:(NSArray *)structNames {
-    for (NSString *name in structNames) {
-        if ([_type matchesForRegex:[NSString stringWithFormat:krStructKnown, name]]) {
-            _type = [_type stringByReplacingPattern:krStructUnknown_1_2 with:name];
-            break;
-        }
-    }
-}
-
 - (void)setType:(NSString *)type {
     _type = type;
     [self buildString];

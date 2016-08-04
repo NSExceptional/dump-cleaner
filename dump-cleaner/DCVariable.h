@@ -18,6 +18,4 @@
 
 @property (nonatomic, readonly) NSString *rawType;
 
-- (void)updateWithKnownStructs:(NSArray *)structNames;
-
 @end
