@@ -97,8 +97,10 @@
     NSString *format = self.isPointer ? @"%@%@;" : @"%@ %@;";
     _string = [NSMutableString stringWithFormat:format, _type, _name];
     
+    NSCharacterSet *nonLetters = [NSCharacterSet letterCharacterSet].invertedSet;
     _rawType = [_type componentsSeparatedByString:@" "].firstObject;
-    _rawType = [_rawType stringByTrimmingCharactersInSet:[NSCharacterSet letterCharacterSet].invertedSet];
+    _rawType = [_rawType stringByTrimmingCharactersInSet:nonLetters];
+    _rawType = [_rawType componentsSeparatedByCharactersInSet:nonLetters].firstObject;
     if ([_rawType isEqualToString:@"struct"] || [_rawType isEqualToString:@"union"]) {
         _rawType = nil;
     }

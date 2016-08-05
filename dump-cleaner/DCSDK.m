@@ -298,6 +298,8 @@ typedef void (^DCStructBlock)(NSString *structName);
 }
 
 - (void)proccessSDKHeader:(NSString *)path {
+    NSParameterAssert(path);
+    
     [self processHeader:path classes:^(DCClass *classOrCategory) {
         NSParameterAssert(self.SDKClasses[classOrCategory.name] == nil);
         self.SDKClasses[classOrCategory.name] = classOrCategory;
@@ -311,7 +313,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         self.SDKProtocols[protocol.name] = protocol;
         
     } structs:^(NSString *structName) {
-        [self.dumpedStructs addObject:structName];
+        [self.SDKStructs addObject:structName];
     }];
 }
 
@@ -342,7 +344,7 @@ typedef void (^DCStructBlock)(NSString *structName);
         }
         
     } structs:^(NSString *structName) {
-        [self.SDKStructs addObject:structName];
+        [self.dumpedStructs addObject:structName];
     }];
 }
 
@@ -364,9 +366,12 @@ typedef void (^DCStructBlock)(NSString *structName);
     }
     DCExitOnError(error);
     
+    // Trim trailing whitespace
+    
     [[DCProgressBar currentProgress] verbose2:path];
     
     NSAssert(header != nil, @"Header contents should be initialized here");
+    header = [header stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSScanner *scanner = [NSScanner scannerWithString:header];
     BOOL success = [scanner parseHeader:^(NSArray<DCInterface *> *interfaces, NSArray *structNames) {
         for (DCInterface *interface in interfaces) {
