@@ -25,6 +25,14 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     return [self.string substringToIndex:self.scanLocation];
 }
 
+- (char)nextScannableChar {
+    NSCharacterSet *backup = self.charactersToBeSkipped;
+    self.charactersToBeSkipped = nil;
+    [self scanToCharacters:backup.invertedSet];
+    self.charactersToBeSkipped = backup;
+    return [self.string characterAtIndex:self.scanLocation];
+}
+
 - (NSCharacterSet *)variableNameCharacterSet {
     static NSCharacterSet *sharedCharacterSet = nil;
     static dispatch_once_t onceToken;
@@ -106,6 +114,21 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     return ret;
 }
 
+- (BOOL)scanWord:(NSString *)string {
+    return [self scanWord:string into:nil];
+}
+
+- (BOOL)scanWord:(NSString *)string into:(NSString **)output {
+    ScanPush();
+    if ([self scanString:string intoString:output] &&
+        ![self.variableNameCharacterSet characterIsMember:[self.string characterAtIndex:self.scanLocation]]) {
+        return YES;
+    }
+    
+    ScanPop();
+    return NO;
+}
+
 - (BOOL)scanCharacters:(NSCharacterSet *)characters {
     return [self scanCharactersFromSet:characters intoString:nil];
 }
@@ -115,16 +138,19 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
 }
 
 - (BOOL)scanAny:(NSArray<NSString *> *)strings ensureKeyword:(BOOL)keyword into:(NSString **)output {
-    ScanPush();
-    for (NSString *string in strings) {
-        if ([self scanString:string intoString:output] && (!keyword ||
-            ![self.variableNameCharacterSet characterIsMember:[self.string characterAtIndex:self.scanLocation]])) {
-            return YES;
+    if (keyword) {
+        for (NSString *string in strings) {
+            if ([self scanWord:string into:output]) {
+                return YES;
+            }
+        }
+    } else {
+        for (NSString *string in strings) {
+            if ([self scanString:string intoString:output]) {
+                return YES;
+            }
         }
     }
-    
-    ScanPop();
-    if (output) { *output = nil; }
     
     return NO;
 }

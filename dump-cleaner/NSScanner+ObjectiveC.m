@@ -326,6 +326,76 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     return YES;
 }
 
+- (BOOL)scanAnyTypedef:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    ScanAssert(ScanAppend(self scanString:@"typedef" intoString));
+    ScanAssertPop(ScanAppend(self scanUpToString:@";" intoString) &&
+                  ScanAppend(self scanString:@";" intoString));
+    
+    ScanBuilderWrite(output);
+    return YES;
+}
+
+/// Starts scanning at "typedef" and scans to ";"
+- (BOOL)scanBlockTypedef:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    // block ::= typedef <return-type>"(^"<identifier>")("[parameters]");"
+    ScanAssert(ScanAppend_(self scanWord:@"typedef" into));
+    ScanAssertPop(ScanAppend(self scanType) &&
+                  ScanAppend(self scanString:@"(" intoString) &&
+                  ScanAppend(self scanString:@"^" intoString) &&
+                  ScanAppend(self scanIdentifier) &&
+                  ScanAppend(self scanString:@")" intoString) &&
+                  ScanAppend(self scanFunctionParameterList));
+    
+    [self scanPastClangAttribute];
+    ScanAssertPop(ScanAppend(self scanString:@";" intoString));
+    
+    ScanBuilderWrite(output);
+    return YES;
+}
+
+/// returnType (^nullability)(parameterTypes) after the :( thing
+- (BOOL)scanBlockMethodParameter:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    static NSArray *nullability = StaticArray(nullability, @"nullable", @"nonnull");
+    // <returnType> "(^"[nullability]")("[parameterTypes]")"
+    
+    ScanAssertPop(ScanAppend(self scanType) &&
+                  ScanAppend(self scanString:@"(" intoString) &&
+                  ScanAppend(self scanString:@"^" intoString) &&
+                  ScanAppend(self scanAny:nullability ensureKeyword:YES into) &&
+                  ScanAppend(self scanString:@")" intoString) &&
+                  ScanAppend(self scanFunctionParameterList));
+    
+    ScanBuilderWrite(output);
+    return YES;
+}
+
+/// Scans returnType (^blockName)(parameterTypes) after the property attributes
+- (BOOL)scanBlockPropertyVariable:(NSString **)type name:(NSString **)name {
+    ScanPush();
+    ScanBuilderInit();
+    
+    // Will probably work for 99% of cases
+    ScanAssert([self scanType:type]);
+    
+    ScanAssertPop(ScanAppend(self scanString:@"(" intoString) &&
+                  ScanAppend(self scanString:@"^" intoString) &&
+                  ScanAppend(self scanIdentifier) &&
+                  ScanAppend(self scanString:@")" intoString) &&
+                  ScanAppend(self scanFunctionParameterList));
+    
+    ScanBuilderWrite(name);
+    return YES;
+}
+
 #pragma mark C types
 
 - (BOOL)scanPastIgnoredThing {
@@ -367,6 +437,24 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     return YES;
 }
 
+- (BOOL)scanPastComment {
+    ScanPush();
+    
+    // Comments like this
+    if ([self scanString:@"//"]) {
+        [self scanPastSpecialMultilineCommentOrMacro];
+        return YES;
+    }
+    /* comemnts like this */ /** or this */
+    else if ([self scanString:@"/*"]) {
+        ScanAssertPop([self scanToString:@"*/"]);
+        ScanAssertPop([self scanString:@"*/"]);
+        return YES;
+    }
+    
+    return NO;
+}
+
 - (BOOL)scanVariable:(DCVariable **)output {
     ScanPush();
     ScanBuilderInit();
@@ -391,6 +479,75 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     if (output) {
         *output = [DCVariable type:__scanned name:identifier];
     }
+    return YES;
+}
+
+- (BOOL)scanFunctionParameter:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    ScanAppend_(self scanTypeMemoryQualifier);
+    ScanAssertPop(ScanAppend_(self scanType));
+    // Function parameters are optional
+    ScanAppend(self scanIdentifier);
+    
+    ScanBuilderWrite(output);
+    return YES;
+}
+
+- (BOOL)scanFunctionParameterList:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    ScanAssert(ScanAppend(self scanString:@"(" intoString));
+    
+    // Optional parameters
+    do {
+        ScanAppend(self scanFunctionParameter);
+    } while (ScanAppend_(self scanString:@"," intoString));
+    
+    // Closing parentheses
+    ScanAssertPop(ScanAppend(self scanString:@")" intoString));
+    
+    ScanBuilderWrite(output);
+    return YES;
+}
+
+- (BOOL)scanCFunction:(NSString **)output {
+    ScanPush();
+    ScanBuilderInit();
+    
+    static NSArray *qualifiers = StaticArray(qualifiers, @"extern", @"inline");
+    ScanAppend_(self scanWord:@"static" into);
+    ScanAppend_(self scanAny:qualifiers ensureKeyword:YES into);
+    ScanAppend_(self scanAny:qualifiers ensureKeyword:YES into);
+    
+    ScanAppend_(self scanTypeMemoryQualifier);
+    
+    // Function type cannot start with typedef,
+    // workaround for preceedence over other stuff
+    NSString *type = nil;
+    if ([self scanType:&type] && [type isEqualToString:@"typedef"]) {
+        ScanPop();
+        return NO;
+    } else {
+        ScanAssertPop(type);
+        [__scanned appendString:type];
+    }
+    
+    // Signature and parameters
+    ScanAssertPop(ScanAppend(self scanIdentifier) &&
+                  ScanAppend(self scanFunctionParameterList));
+    
+    // Some can be inline, some can be prototypes
+    if (ScanAppendFormat(self scanString:@"{" intoString, @"%@\n")) {
+        ScanAssertPop([self scanToString:@"}"]);
+    } else {
+        [self scanPastClangAttribute];
+        ScanAppend(self scanString:@";" intoString);
+    }
+    
+    ScanBuilderWrite(output);
     return YES;
 }
 

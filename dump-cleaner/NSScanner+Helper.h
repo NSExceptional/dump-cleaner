@@ -13,6 +13,7 @@
 
 @property (nonatomic, readonly) NSString *remainingString;
 @property (nonatomic, readonly) NSString *scannedString;
+@property (nonatomic, readonly) char nextScannableChar;
 
 @property (nonatomic, readonly) NSCharacterSet *variableNameCharacterSet;
 @property (nonatomic, readonly) NSCharacterSet *variableAttributesCharacterSet;
@@ -23,6 +24,8 @@
 
 - (BOOL)scanString:(NSString *)string;
 - (BOOL)scanToString:(NSString *)string;
+- (BOOL)scanWord:(NSString *)string;
+- (BOOL)scanWord:(NSString *)string into:(NSString **)output;
 - (BOOL)scanCharacters:(NSCharacterSet *)characters;
 - (BOOL)scanToCharacters:(NSCharacterSet *)characters;
 - (BOOL)scanAny:(NSArray<NSString *> *)strings ensureKeyword:(BOOL)keyword into:(NSString **)output;

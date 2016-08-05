@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
+
 @class DCVariable, DCProperty, DCMethod, DCClass, DCProtocol, DCInterface;
 typedef void(^InterfaceBodyBlock)(NSArray<DCProperty*> *properties, NSArray<DCMethod*> *methods);
 typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *structNames);
@@ -35,7 +36,11 @@ typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *st
 
 #pragma mark C types
 - (BOOL)scanPastIgnoredThing;
+- (BOOL)scanPastComment;
 - (BOOL)scanVariable:(DCVariable **)output;
+- (BOOL)scanFunctionParameter:(NSString **)output;
+- (BOOL)scanFunctionParameterList:(NSString **)output;
+- (BOOL)scanCFunction:(NSString **)output;
 - (BOOL)scanTypedefStructUnionOrEnum:(NSString **)output;
 - (BOOL)scanStructOrUnion:(NSString **)output;
 - (BOOL)scanEnum:(NSString **)output;
