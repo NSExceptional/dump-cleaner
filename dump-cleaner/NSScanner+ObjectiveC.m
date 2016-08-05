@@ -152,8 +152,11 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAssertPop(isInstanceMethod || [self scanString:@"+"]);
     
     ScanAssertPop([self scanString:@"("]);
-    ScanAppend_(self scanProtocolQualifier);
-    ScanAssertPop(ScanAppend(self scanType) && [self scanString:@")"]);
+    ScanAppend_(self scanReturnTypeQualifier);
+    ScanAppend_(self scanTypeMemoryQualifier);
+    ScanAssertPop((ScanAppend(self scanString:@"instancetype" intoString) || // Just an optimization
+                   ScanAppend(self scanBlockMethodParameter) || // order does not matter for these 3
+                   ScanAppend(self scanType)) && [self scanString:@")"]);
     [types addObject:__scanned.copy];
     
     // Scan builder will hold the selector
@@ -164,14 +167,15 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAssertPop(ScanAppend(self scanIdentifier));
     while (ScanAppend(self scanString:@":" intoString)) {
         // Scan parameter (protocol qualifier and type)
-        NSString *protocolQualifier = nil, *type = nil, *arg = nil;
+        NSString *returnTypeQualifier = nil, *type = nil, *arg = nil;
         ScanAssertPop([self scanString:@"("]);
-        [self scanProtocolQualifier:&protocolQualifier];
-        ScanAssertPop([self scanType:&type] && [self scanString:@")"]);
+        [self scanTypeMemoryQualifier:&returnTypeQualifier];
+        ScanAssertPop(([self scanType:&type] ||
+                       [self scanBlockMethodParameter:&type]) && [self scanString:@")"]);
         
         // Add to types
-        if (protocolQualifier) {
-            type = [NSString stringWithFormat:@"%@ %@", protocolQualifier, type];
+        if (returnTypeQualifier) {
+            type = [NSString stringWithFormat:@"%@ %@", returnTypeQualifier, type];
         }
         [types addObject:type];
         

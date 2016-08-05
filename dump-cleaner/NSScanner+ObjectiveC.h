@@ -50,7 +50,7 @@ typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *st
 - (BOOL)scanIdentifier:(NSString **)output;
 - (BOOL)scanTypeMemoryQualifier:(NSString **)output;
 - (BOOL)scanTypeQualifier:(NSString **)output;
-- (BOOL)scanProtocolQualifier:(NSString **)output;
+- (BOOL)scanReturnTypeQualifier:(NSString **)output;
 - (BOOL)scanType:(NSString **)output;
 - (BOOL)scanPointers:(NSString **)output;
 - (BOOL)scanPastSpecialMultilineCommentOrMacro;
