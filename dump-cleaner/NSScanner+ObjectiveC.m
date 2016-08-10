@@ -15,6 +15,8 @@
 #import "DCMethod.h"
 
 
+static NSInteger kHeaderIterationCount = 0;
+
 @implementation NSScanner (ObjectiveC)
 
 static NSMutableDictionary<NSString*, DCProtocol*> *SDKProtocols;
@@ -411,8 +413,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAssertPop(ScanAppend(self scanType) &&
                   ScanAppend(self scanString:@"(" intoString) &&
                   ScanAppend(self scanString:@"^" intoString) &&
-                  ScanAppend(self scanAny:nullability ensureKeyword:YES into) &&
-                  ScanAppend(self scanString:@")" intoString) &&
+                  ScanAppend(self scanPastClosingParenthese) &&
                   ScanAppend(self scanFunctionParameterList));
     
     ScanBuilderWrite(output);
@@ -429,8 +430,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     
     ScanAssertPop(ScanAppend(self scanString:@"(" intoString) &&
                   ScanAppend(self scanString:@"^" intoString) &&
-                  ScanAppend(self scanIdentifier) &&
-                  ScanAppend(self scanString:@")" intoString) &&
+                  ScanAppend(self scanPastClosingParenthese) &&
                   ScanAppend(self scanFunctionParameterList));
     
     ScanBuilderWrite(name);
@@ -574,15 +574,8 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanPush();
     ScanBuilderInit();
     
-    ScanAssert(ScanAppend(self scanString:@"(" intoString));
-    
-    // Optional parameters
-    do {
-        ScanAppend(self scanFunctionParameter);
-    } while (ScanAppend_(self scanString:@"," intoString));
-    
-    // Closing parentheses
-    ScanAssertPop(ScanAppend(self scanString:@")" intoString));
+    ScanAssertPop(ScanAppend(self scanString:@"(" intoString) &&
+                  ScanAppend(self scanPastClosingParenthese));
     
     ScanBuilderWrite(output);
     return YES;
@@ -625,7 +618,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     
     // Some can be inline, some can be prototypes
     if (ScanAppendFormat(self scanString:@"{" intoString, @"%@\n")) {
-        ScanAssertPop([self scanToString:@"}"] && ScanAppendFormat(self scanString:@"}" intoString, @"\n%@"));
+        ScanAssertPop(ScanAppend(self scanPastClosingBracket));
     } else {
         [self scanPastClangAttribute];
         ScanAppend(self scanString:@";" intoString);
@@ -668,12 +661,17 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     
     // Struct and union typedefs are assumed to not have a trailing attribute
     ScanAssert(ScanAppend_(self scanWord:@"typedef" into));
+    
+    // typedef struct Foo { ... } Foo NS_ATTR();
     if (ScanAppend_(self scanStructOrUnion)) {
         ScanAssertPop(ScanAppend(self scanIdentifier));
-    } else if (ScanAppend_(self scanAny:types ensureKeyword:YES into)) {
+    }
+    // typedef struct Foo Bar;
+    else if (ScanAppend_(self scanAny:types ensureKeyword:YES into)) {
         ScanAssertPop(ScanAppend_(self scanIdentifier) && ScanAppend(self scanIdentifier));
         [self scanPastClangAttribute];
-    } else if (ScanAppend_(self scanEnum)) {
+    }
+    else if (ScanAppend_(self scanEnum)) {
         ScanAssertPop(ScanAppend(self scanIdentifier));
         [self scanPastClangAttribute];
     } else {
@@ -702,16 +700,8 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
         return YES;
     }
     
-    ScanAssertPop(ScanAppend_(self scanString:@"{" intoString));
-    do {
-        BOOL commentOrDirective = [self scanPastIgnoredThing];
-        DCVariable *var = nil;
-        if ([self scanVariable:&var]) {
-            [__scanned appendFormat:@"\n\t%@", var.string];
-        } else {
-            ScanAssertPop(commentOrDirective || !isStruct || ScanAppendFormat(self scanBitfield, @"\n\t%@"));
-        }
-    } while (!ScanAppendFormat(self scanString:@"}" intoString, @"\n%@"));
+    ScanAssertPop(ScanAppend_(self scanString:@"{" intoString) &&
+                  ScanAppend(self scanPastClosingBracket));
     
     ScanBuilderWrite(output);
     return YES;
@@ -739,10 +729,8 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAssertPop(ScanAppend(self scanAny:enumTypes ensureKeyword:YES into));
     // '('type, name')'
     ScanAssertPop(ScanAppend(self scanString:@"(" intoString) &&
-                  ScanAppend_(self scanPastClosingParenthese));
-    
-    
-    ScanAssertPop(ScanAppend(self scanEnumBody));
+                  ScanAppend_(self scanPastClosingParenthese) &&
+                  ScanAppend(self scanEnumBody));
     
     ScanBuilderWrite(output);
     return YES;
@@ -752,35 +740,8 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanPush();
     ScanBuilderInit();
     
-    ScanAssert(ScanAppend_(self scanString:@"{" intoString));
-    
-    // val ::= identifier [attr][= expr][, val]
-    do {
-        // Cases like
-        // enum {
-        //     Foo, // comment
-        // #if statement
-        //     Bar,
-        // #endif
-        //     Baz
-        // }
-        while ([self scanPastIgnoredThing]) { }
-        
-        // Lists can end with a comma
-        if (self.nextScannableChar == '}') {
-            break;
-        }
-        
-        [__scanned appendString:@"\n"];
-        ScanAssertPop(ScanAppend_(self scanIdentifier));
-        [self scanPastClangAttribute];
-        if (ScanAppend_(self scanString:@"=" intoString)) {
-            ScanAssertPop(ScanAppend(self scanExpression));
-        }
-    } while (ScanAppend_(self scanString:@"," intoString));
-    
-    [self scanPastComment];
-    ScanAssertPop(ScanAppend(self scanString:@"}" intoString));
+    ScanAssertPop(ScanAppend_(self scanString:@"{" intoString) &&
+                  ScanAppend(self scanPastClosingBracket));
     
     ScanBuilderWrite(output);
     return YES;
@@ -937,14 +898,14 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     return YES;
 }
 
-- (BOOL)scanPastClosingParenthese:(NSString **)output {
+- (BOOL)scanPastClosingTag:(char)closing opening:(char)opening output:(NSString **)output {
     NSInteger c = 1;
     NSInteger i;
     for (i = self.scanLocation; c > 0 && i < self.string.length; i++) {
         char ch = [self.string characterAtIndex:i];
-        if (ch == '(') {
+        if (ch == opening) {
             c++;
-        } else if (ch == ')') {
+        } else if (ch == closing) {
             c--;
         }
     }
@@ -958,6 +919,14 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     }
     self.scanLocation = i;
     return YES;
+}
+
+- (BOOL)scanPastClosingParenthese:(NSString **)output {
+    return [self scanPastClosingTag:')' opening:'(' output:output];
+}
+
+- (BOOL)scanPastClosingBracket:(NSString **)output {
+    return [self scanPastClosingTag:'}' opening:'{' output:output];
 }
 
 @end
