@@ -88,11 +88,10 @@ typedef void (^DCStructBlock)(NSString *structName);
     if (!names.count) { DCExitWithFormat(@"No SDKs found in the SDKs folder located at: %@", SDKFolder); }
     
     // Filter by ending with .sdk, append paths
-    names = [names map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
-        *discard = ![object hasSuffix:@".sdk"];
-        return object;
+    names = [names map:^id(NSString *object, NSUInteger x) {
+        return [object hasSuffix:@".sdk"] ? object : nil;
     }];
-    NSArray *paths = [names map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+    NSArray *paths = [names map:^id(NSString *object, NSUInteger idx) {
         return [SDKFolder stringByAppendingPathComponent:object];
     }];
     
@@ -117,9 +116,8 @@ typedef void (^DCStructBlock)(NSString *structName);
     NSFileManager *manager = [NSFileManager defaultManager];
     NSError *error = nil;
     NSArray *frameworks = [manager contentsOfDirectoryAtPath:frameworksFolder error:&error];
-    frameworks = [frameworks map:^id(NSString *framework, NSUInteger idx, BOOL *discard) {
-        *discard = ![framework.pathExtension isEqualToString:@"framework"];
-        return framework;
+    frameworks = [frameworks map:^id(NSString *framework, NSUInteger idx) {
+        return [framework.pathExtension isEqualToString:@"framework"] ? framework : nil;
     }];
     
     DCExitOnError(error);
@@ -148,9 +146,8 @@ typedef void (^DCStructBlock)(NSString *structName);
         // TODO test this shit
         // Get headers in the given framework folder
         NSString *frameworkPath = [frameworksFolder stringByAppendingPathComponent:framework];
-        NSArray *headers = [[manager filesInDirectoryAtPath:frameworkPath recursive:YES] map:^id(NSString *item, NSUInteger idx, BOOL *discard) {
-            *discard = ![item.pathExtension isEqualToString:@"h"];
-            return item;
+        NSArray *headers = [[manager filesInDirectoryAtPath:frameworkPath recursive:YES] map:^id(NSString *item, NSUInteger idx) {
+            return [item.pathExtension isEqualToString:@"h"] ? item : nil;
         }];
         
         // output = ".../outdir/Cleaned/FrameworkPrivate.framework/Headers/"
@@ -234,7 +231,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     DCExitOnError(error);
     
     // Transform header files to import statements
-    NSArray *imports = [newHeaders map:^id(NSString *file, NSUInteger idx, BOOL *discard) {
+    NSArray *imports = [newHeaders map:^id(NSString *file, NSUInteger idx) {
         return [NSString stringWithFormat:@"#import <%@/%@>\n", frameworkName, file];
     }];
     

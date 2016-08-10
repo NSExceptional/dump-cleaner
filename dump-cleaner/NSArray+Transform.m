@@ -11,15 +11,14 @@
 
 @implementation NSArray (Transform)
 
-- (NSArray *)map:(id(^)(id object, NSUInteger idx, BOOL *discard))transform {
+- (NSArray *)map:(id(^)(id object, NSUInteger idx))transform {
     NSParameterAssert(transform);
     
     NSMutableArray *array = [NSMutableArray array];
     [self enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        BOOL discard = NO;
-        id newObj = transform(obj, idx, &discard);
+        id newObj = transform(obj, idx);
         
-        if (discard) {
+        if (!newObj) {
             return;
         } else {
             [array addObject:newObj];

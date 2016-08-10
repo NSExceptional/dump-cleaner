@@ -11,7 +11,7 @@
 
 @interface NSArray<ObjectType> (Transform)
 
-- (NSArray *)map:(id(^)(ObjectType object, NSUInteger idx, BOOL *discard))transform;
+- (NSArray *)map:(id(^)(ObjectType object, NSUInteger idx))transform;
 - (NSString *)join:(NSString *)separator;
 
 @property (nonatomic, readonly) NSArray *flattened;

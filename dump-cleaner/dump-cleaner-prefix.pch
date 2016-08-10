@@ -30,6 +30,7 @@
 #define DCAssertNotNil(a) DCAssert((a) != nil)
 #define DCAssertNil(a) DCAssert((a) == nil)
 
+#define DCParseFlagsSetLast(flags, flag) memset(&flags, 0, sizeof(flags)); flags.flag = 1
 
 #define DCLog(message) printf("%s\n", message.UTF8String)
 

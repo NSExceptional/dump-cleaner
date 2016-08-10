@@ -101,7 +101,7 @@
     else {
         // Superclass
         if (_superclassName) {
-            [_string appendFormat:@" : %@", _categoryName];
+            [_string appendFormat:@" : %@", _superclassName];
         }
         // Conformed protocols
         if (self.conformedProtocols.count) {
@@ -125,9 +125,9 @@
     // Properties and methods
     [_string appendString:@"\n\n"];
     for (DCProperty *property in self.properties)
-        [_string appendFormat:@"%@\n", property];
+        [_string appendFormat:@"%@\n", property.string];
     for (DCMethod *method in self.methods)
-        [_string appendFormat:@"%@\n", method];
+        [_string appendFormat:@"%@\n", method.string];
     
     [_string appendString:@"@end\n"];
     

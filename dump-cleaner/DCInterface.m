@@ -66,9 +66,8 @@
     // dependencies easier below
     
     NSSet *classNames = [NSSet setWithArray:[classes valueForKeyPath:@"@unionOfObjects.name"]];
-    NSArray *nonObjectProperties = [self.properties map:^id(DCProperty *property, NSUInteger idx, BOOL *discard) {
-        *discard = !property.isObject || !property.ivar.isPointer;
-        return property;
+    NSArray *nonObjectProperties = [self.properties map:^id(DCProperty *property, NSUInteger idx) {
+        return !property.isObject || !property.ivar.isPointer ? nil : property;
     }];
     
     // Update object properties

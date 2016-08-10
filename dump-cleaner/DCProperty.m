@@ -40,14 +40,12 @@
         // getter/setter attributes, or default
         // to the compiler generated ones.
         
-        _getterSelector = [[attrs map:^id(NSString *str, NSUInteger idx, BOOL *discard) {
-            *discard = ![str hasPrefix:@"getter"];
-            return str;
+        _getterSelector = [[attrs map:^id(NSString *str, NSUInteger idx) {
+            return [str hasPrefix:@"getter"] ? str : nil;
         }].firstObject componentsSeparatedByString:@"="][1] ?: variable.name;
         if (![attrs containsObject:@"readonly"]) {
-            _setterSelector = [[attrs map:^id(NSString *str, NSUInteger idx, BOOL *discard) {
-                *discard = ![str hasPrefix:@"setter"];
-                return str;
+            _setterSelector = [[attrs map:^id(NSString *str, NSUInteger idx) {
+                return [str hasPrefix:@"setter"] ? str : nil;
             }].firstObject componentsSeparatedByString:@"="][1] ?:
             [NSString stringWithFormat:@"set%@:", variable.name.capitalizedString];
         }

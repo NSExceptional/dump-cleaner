@@ -10,7 +10,8 @@
 
 static NSString * const kVariableNameChars = @"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
 static NSString * const kVariableStartNameChars = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-static NSString * const kVariableAttributesChars = @"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_()&!|#,";
+static NSString * const kHexChars = @"abcdefABCDEF1234567890";
+static NSString * const kVariableAttributesChars = @"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_&!|#,";
 static NSString * const kNumericOperatorChars = @"&^|<>";
 
 
@@ -93,6 +94,17 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     return sharedCharacterSet;
 }
 
+- (NSCharacterSet *)hexadecimalCharacterSet {
+    static NSCharacterSet *sharedCharacterSet = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:kHexChars];
+    });
+    
+    return sharedCharacterSet;
+}
+
+
 - (BOOL)scanString:(NSString *)string {
     return [self scanString:string intoString:nil];
 }
@@ -121,9 +133,10 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
 - (BOOL)scanWord:(NSString *)string into:(NSString **)output {
     ScanPush();
     if ([self scanString:string intoString:output] &&
-        ![self.variableNameCharacterSet characterIsMember:[self.string characterAtIndex:self.scanLocation]]) {
-        return YES;
-    }
+        (self.scanLocation == self.string.length ||
+         ![self.variableNameCharacterSet characterIsMember:[self.string characterAtIndex:self.scanLocation]])) {
+            return YES;
+        }
     
     ScanPop();
     return NO;
@@ -157,29 +170,24 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
 
 - (BOOL)scanExpression:(NSString **)output {
     ScanPush();
+    ScanBuilderInit();
     
-    NSMutableString *result = [NSMutableString string];
-    NSString *tmp = nil;
+    // expr = ['('] digit_or_identifier [operator expr]* [')']
     
-    // expr = [(] digit [operator expr]* [)]
-    
-    // [(] digit
+    // [(] digit_or_identifier
     BOOL needsClosingBrace = [self scanString:@"("];
-    ScanAssertPop([self scanNumberLiteral:&tmp]);
-    [result appendString:tmp];
+    ScanAssertPop(ScanAppend(self scanNumberLiteral) || ScanAppend(self scanIdentifier));
     
     // [operator expr]*
-    while ([self scanCharactersFromSet:self.numericOperatorsCharacterSet intoString:&tmp]) {
-        [result appendFormat:@" %@ ", tmp];
-        ScanAssertPop([self scanExpression:&tmp]);
-        [result appendString:tmp];
+    while (ScanAppendFormat(self scanCharactersFromSet:self.numericOperatorsCharacterSet intoString, @" %@ ")) {
+        ScanAssertPop(ScanAppend(self scanExpression));
     }
     
     if (needsClosingBrace) {
         ScanAssertPop([self scanString:@")"]);
     }
     
-    *output = result.copy;
+    ScanBuilderWrite(output);
     return YES;
 }
 
@@ -189,12 +197,40 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     
     // num ::= (0x digit+) | (digit*['.' digit*][f])
     BOOL hex = ScanAppend(self scanString:@"0x" intoString);
-    ScanAssertPop(ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString));
-    if (!hex) {
-        if (ScanAppend(self scanString:@"." intoString)) {
-            ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString);
+    BOOL isFloat = NO, isChar = NO;
+    if (hex) {
+        ScanAssertPop(ScanAppend(self scanCharactersFromSet:self.hexadecimalCharacterSet intoString));
+        static NSArray *bs = StaticArray(bs, @"b", @"B");
+        ScanAppend(self scanAny:bs ensureKeyword:NO into);
+    } else {
+        // Character literals
+        if (ScanAppend(self scanString:@"'" intoString)) {
+            isChar = YES;
+            ScanAssertPop(ScanAppend(self scanUpToString:@"'" intoString) &&
+                          ScanAppend(self scanString:@"'" intoString))
+            ScanAssertPop(![__scanned containsString:@"\n"]);
         }
-        ScanAppend(self scanString:@"f" intoString);
+        
+        // Decimals
+        else {
+            ScanAppend(self scanString:@"-" intoString);
+            ScanAssertPop(ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString));
+            if (ScanAppend(self scanString:@"." intoString)) {
+                ScanAppend(self scanCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString);
+            }
+            
+            isFloat = ScanAppend(self scanString:@"f" intoString);
+        }
+        
+        if (!isFloat) {
+            static NSArray *us = StaticArray(us, @"U", @"u");
+            ScanAppend(self scanAny:us ensureKeyword:NO into);
+        }
+    }
+    
+    if (!isFloat && !isChar) {
+        static NSArray *us = StaticArray(us, @"L", @"l");
+        ScanAppend(self scanAny:us ensureKeyword:NO into);
     }
     
     ScanBuilderWrite(output);

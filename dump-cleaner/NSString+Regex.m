@@ -19,10 +19,10 @@
 }
 
 - (NSComparisonResult)compareSDKVersion:(NSString *)version {
-    NSArray<NSNumber*> *myParts = [[self componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+    NSArray<NSNumber*> *myParts = [[self componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx) {
         return @(object.integerValue);
     }];
-    NSArray<NSNumber*> *otherParts = [[version componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx, BOOL *discard) {
+    NSArray<NSNumber*> *otherParts = [[version componentsSeparatedByString:@"."] map:^id(NSString *object, NSUInteger idx) {
         return @(object.integerValue);
     }];
     assert(myParts.count && otherParts.count);

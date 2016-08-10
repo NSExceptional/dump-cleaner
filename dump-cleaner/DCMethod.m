@@ -35,7 +35,9 @@
 
 - (BOOL)buildString {
     NSInteger c = 0;
-    NSArray *selectorParts = [_selectorString componentsSeparatedByString:@":"];
+    NSArray *selectorParts = [[_selectorString componentsSeparatedByString:@":"] map:^id(NSString *object, NSUInteger idx) {
+        return object.length ? object : nil;
+    }];
     NSString *returnType   = _types[0];
     
     // Start with the method type, return type, and first selector component

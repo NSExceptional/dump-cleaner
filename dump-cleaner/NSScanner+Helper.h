@@ -21,6 +21,7 @@
 @property (nonatomic, readonly) NSCharacterSet *numericOperatorsCharacterSet;
 @property (nonatomic, readonly) NSCharacterSet *spaceCharacterSet;
 @property (nonatomic, readonly) NSCharacterSet *newlineCharacterSet;
+@property (nonatomic, readonly) NSCharacterSet *hexadecimalCharacterSet;
 
 - (BOOL)scanString:(NSString *)string;
 - (BOOL)scanToString:(NSString *)string;
