@@ -8,13 +8,14 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 - `-c` Import classes used in the interface if they are in the same directory or a subdirectory
 - `-p` Do not generate forward declarations for protocols
 - `-P` Remove protocol conformities from class interfaces (since you cannot forward-declare these)
+- `-n` *Do* forward declare NSObject protocol (as long as `-p` is not specified)
 - `-r` Recursive
 - `-v` Verbose
 
 ## What it does by default
 
 - If properties and their respective backing-ivar are in the same interface, the ivars will be automatically removed
-- Automatically generates forward declarations for protocols found in the interface
+- Automatically generates forward declarations for protocols found in the interface (excluding the `NSObject` protocol)
 - Replaces `unsigned int` with `NSUInteger`
 - Replaces most inline struct definitions (i.e. `struct CGPoint { float x; float y; }`) with their name, if the name is available (this means anonymous structs are left alone)
 - Fixes properties and ivars declared like `<SomeProtocol> *_ivar;`, as they should be declared like `id<SomeProtocol> _ivar;`
