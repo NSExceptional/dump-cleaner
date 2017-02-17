@@ -6,8 +6,8 @@ Usage: `dumpcleaner [-iscpPrv] directory`
 - `-i` *Keep* property-backing ivars in the interface.
 - `-s` Import parent class (if available in the same directory or a subdirectory)
 - `-c` Import classes used in the interface if they are in the same directory or a subdirectory
-- `-P` Do not generate forward declarations for protocols
-- `-p` Remove protocol conformities from class interfaces (since you cannot forward-declare these)
+- `-p` Do not generate forward declarations for protocols
+- `-P` Remove protocol conformities from class interfaces (since you cannot forward-declare these)
 - `-r` Recursive
 - `-v` Verbose
 
