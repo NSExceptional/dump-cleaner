@@ -10,7 +10,7 @@
 #import "NSString+Regex.h"
 
 
-NSString * const kMessage = @"Usage: dumpcleaner [-iscpPrv] directory\n\t-i\tKeep property-backing ivars\n\t-s\tImport parent class (if available)\n\t-c\tImport used classes in the same directory\n\t-P\tDo not generate forward declarations for protocols\n\t-p\tRemove protocol conformities from class interfaces\n\t-r\tRecursive\n\t-v\tVerbose\n";
+NSString * const kMessage = @"Usage: dumpcleaner [-iscpPndrv] directory\n\t-i\tKeep property-backing ivars\n\t-s\tImport parent class (if available)\n\t-c\tImport used classes in the same directory\n\t-p\tDo not generate forward declarations for protocols\n\t-P\tRemove protocol conformities from class interfaces\n\t-n\tDo make NSObject protocol forward declarations (use without -p)\n\t-d\tDon't change double to CGFloat\n\t-r\tRecursive\n\t-v\tVerbose\n";
 
 NSString * const krStruct = @"struct (CGPoint|CGSize|CGRect|UIEdgeInsets|UIEdgeRect|NSRange|NSRect|CATransform3D) \\{(?:\\s*\\w+ \\w+;)+\\s*\\}";
 NSUInteger const krStruct_type = 1;
@@ -22,23 +22,26 @@ NSUInteger const krProperty_name = 2;
 NSString * const krIvarsPresent = @"@interface \\w+ : \\w+ <(?:\\w+(?:, )?)+>( \\{(?:[\\s]+[\\w\\s*;<>]+)+\\})";
 NSString * const krSupeclass = @"@interface \\w+ : (\\w+)";
 NSUInteger const krSupeclass_name = 1;
-NSString * const krDelegateMissingType = @"(?:\\n +|\\(|\\) +)((<\\w+>) *\\*?)";
+NSString * const krDelegateMissingType = @"(?:\\n +|\\(|@property ?\\([\\w,=:]+\\) +)((<\\w+>) *\\*?)";
 NSUInteger const krDelegateMissingType_type = 2;
 NSUInteger const krDelegateMissingType_replace = 1;
 NSString * const krProtocol = @"\\w+ ?<(\\w+)>";
 NSUInteger const krProtocol_name = 1;
 NSString * const krConformedProtocols = @"@interface \\w+ : \\w+( <[\\w, ]+>)";
 NSUInteger const krConformedProtocols_value = 1;
+NSString * const kEmptyBraces = @" ?\\{\\s*\\}";
 
 
 typedef NS_OPTIONS(NSUInteger, DCOptions) {
-    DCOptionsKeepPropertyIVars        = 1 << 0,
-    DCOptionsImportSuperclass         = 1 << 1,
-    DCOptionsImportAvailibleClasses   = 1 << 2,
-    DCOptionsForwardDeclareProtocols  = 1 << 3,
-    DCOptionsRemoveConformedProtocols = 1 << 4,
-    DCOptionsRecursive                = 1 << 5,
-    DCOptionsVerbose                  = 1 << 6
+    DCOptionsKeepPropertyIVars              = 1 << 0,
+    DCOptionsImportSuperclass               = 1 << 1,
+    DCOptionsImportAvailibleClasses         = 1 << 2,
+    DCOptionsForwardDeclareProtocols        = 1 << 3,
+    DCOptionsRemoveConformedProtocols       = 1 << 4,
+    DCOptionsFowrardDeclareNSObjectProtocol = 1 << 5,
+    DCOptionsDontChangeDoubleToCGFloat      = 1 << 6,
+    DCOptionsRecursive                      = 1 << 7,
+    DCOptionsVerbose                        = 1 << 8
 };
 
 NSArray * DCArgsFromCharPtr(const char **vargs, int c);
@@ -180,6 +183,7 @@ NSArray * DCFilesInDirectory(NSString *path, BOOL recursive) {
     return files.copy;
 }
 
+#define FR(file) NSMakeRange(0, file.length)
 void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, NSMutableArray *errors) {
     NSError *error = nil;
     NSMutableString *fileContents = [NSMutableString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
@@ -187,17 +191,22 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
     if (error) {
         [errors addObject:error];
     } else {
+        
         // Replace "unsigned int" and "unsigned long" with NSUInteger, and "double" with CGFloat
-        [fileContents replaceOccurrencesOfString:@"unsigned int" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"unsigned long" withString:@"NSUInteger" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"NSUInteger long" withString:@"unsigned long long" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"double" withString:@"CGFloat" options:0 range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:@"long long" withString:@"long" options:0 range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:@"unsigned int" withString:@"NSUInteger" options:0 range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:@"unsigned long" withString:@"NSUInteger" options:0 range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:@"long" withString:@"NSInteger" options:0 range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:@"long CGFloat" withString:@"long double" options:0 range:FR(fileContents)];
+        
+        if (!(options & DCOptionsDontChangeDoubleToCGFloat)) {
+            [fileContents replaceOccurrencesOfString:@"double" withString:@"CGFloat" options:0 range:FR(fileContents)];
+        }
         
         // Replace full structs with their types (thrice for possibly nested structs)
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
-        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:FR(fileContents)];
+        [fileContents replaceOccurrencesOfString:krStruct withString:@"$1" options:NSRegularExpressionSearch range:FR(fileContents)];
         
         // Remove NSObject overrides
         // hash, class, superclass, description, debugDescription, etc
@@ -210,7 +219,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
                         @"@property .+NSString \\*debugDescription; ?\n"];
         });
         for (NSString *expr in regexes)
-            [fileContents replaceOccurrencesOfString:expr withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+            [fileContents replaceOccurrencesOfString:expr withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
         
         // Import parent class
         if (options & DCOptionsImportSuperclass) {
@@ -232,7 +241,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
             NSRange r = ranges[i++].rangeValue;
             r.location += offset;
             offset += replacement.length - r.length;
-            [fileContents replaceCharactersInRange:r withString:replacement];
+            [fileContents replaceCharactersInRange:FR(fileContents) withString:replacement];
         }
         
         // Fix empty struct refs, ie "struct __CFBinaryHeap { }*"
@@ -244,7 +253,7 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
             NSRange r = ranges[i++].rangeValue;
             r.location += offset;
             offset += replacement.length - r.length;
-            [fileContents replaceCharactersInRange:r withString:replacement];
+            [fileContents replaceCharactersInRange:FR(fileContents) withString:replacement];
         }
         
         // Remove property getters and setters
@@ -258,30 +267,36 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
             // Hacky but it'll do for 99% of classes
             if (([type containsString:@"*"] && ![type hasPrefix:@"char"]) || [type allMatchesForRegex:krProtocol atIndex:krProtocol_name].count) {
                 NSString *regex = [NSString stringWithFormat:@"- \\(void\\)set%@:\\(id\\)\\w+;\n", property.pascalCaseString];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
                 regex = [NSString stringWithFormat:@"- \\(id\\)%@;\n", property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
             } else {
                 NSString *regex = [NSString stringWithFormat:@"- \\(void\\)set%@:\\(%@\\)\\w+;\n", property.pascalCaseString, type];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
                 regex = [NSString stringWithFormat:@"- \\(%@\\)%@;\n", type, property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
             }
             
             if (!(options & DCOptionsKeepPropertyIVars)) {
                 type = [type stringByReplacingOccurrencesOfString:@"*" withString:@"\\*"];
                 NSString *regex = [NSString stringWithFormat:@" +%@ ?_%@;\n", type, property];
-                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:regex withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
                 
                 // Remove empty braces
-                [fileContents replaceOccurrencesOfString:@" \\{\\n\\}" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, fileContents.length)];
+                [fileContents replaceOccurrencesOfString:@" \\{\\n\\}" withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
             }
         }
         
         // Forward protocols
         if (options & DCOptionsForwardDeclareProtocols) {
             NSArray *protocols = [fileContents allMatchesForRegex:krProtocol atIndex:krProtocol_name];
-            protocols = [NSSet setWithArray:protocols].allObjects;
+            NSMutableSet *tmp = [NSMutableSet setWithArray:protocols];
+            
+            if (!(options & DCOptionsFowrardDeclareNSObjectProtocol)) {
+                [tmp removeObject:@"NSObject"];
+            }
+            
+            protocols = tmp.allObjects;
             if (protocols.count) {
                 NSMutableString *forward = [NSMutableString stringWithString:@"@protocol "];
                 for (NSString *proto in protocols)
@@ -310,6 +325,9 @@ void DCProcessFile(NSString *path, NSArray *otherFilePaths, DCOptions options, N
                 }
             }
         }
+        
+        // Remove empty braces
+        [fileContents replaceOccurrencesOfString:kEmptyBraces withString:@"" options:NSRegularExpressionSearch range:FR(fileContents)];
         
         // Save changes
 #if TESTING
@@ -362,14 +380,20 @@ DCOptions DCOptionsFromString(NSString *flags) {
         options |= DCOptionsImportSuperclass;
     if ([flags containsString:@"c"])
         options |= DCOptionsImportAvailibleClasses;
-    if ([flags containsString:@"p"])
-        options |= DCOptionsForwardDeclareProtocols;
     if ([flags containsString:@"P"])
         options |= DCOptionsRemoveConformedProtocols;
     if ([flags containsString:@"r"])
         options |= DCOptionsRecursive;
     if ([flags containsString:@"v"])
         options |= DCOptionsVerbose;
+    if ([flags containsString:@"d"])
+        options |= DCOptionsDontChangeDoubleToCGFloat;
+    if (![flags containsString:@"p"]) {
+        options |= DCOptionsForwardDeclareProtocols;
+        if ([flags containsString:@"n"])
+            options |= DCOptionsFowrardDeclareNSObjectProtocol;
+    }
+    
     
     return options;
 }
