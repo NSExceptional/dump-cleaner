@@ -37,6 +37,7 @@ typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *st
 #pragma mark C types
 - (BOOL)scanPastIgnoredThing;
 - (BOOL)scanPastComment;
+- (BOOL)scanPastInlineComment;
 - (BOOL)scanVariable:(DCVariable **)output;
 - (BOOL)scanFunctionParameter:(NSString **)output;
 - (BOOL)scanFunctionParameterList:(NSString **)output;
@@ -55,5 +56,10 @@ typedef void(^ParseCallbackBlock)(NSArray<DCInterface*> *interfaces, NSArray *st
 - (BOOL)scanPointers:(NSString **)output;
 - (BOOL)scanPastSpecialMultilineCommentOrMacro;
 - (BOOL)scanPastClangAttribute;
+
+- (BOOL)scanPastClosingParenthese:(NSString **)output;
+- (BOOL)scanPastClosingBracket:(NSString **)output;
+- (BOOL)scanPastClosingAngleBracket:(NSString **)output;
+- (BOOL)scanPastClosingEndIfDirective;
 
 @end

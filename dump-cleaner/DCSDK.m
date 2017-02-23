@@ -369,6 +369,7 @@ typedef void (^DCStructBlock)(NSString *structName);
     
     NSAssert(header != nil, @"Header contents should be initialized here");
     header = [header stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
     NSScanner *scanner = [NSScanner scannerWithString:header];
     BOOL success = [scanner parseHeader:^(NSArray<DCInterface *> *interfaces, NSArray *structNames) {
         for (DCInterface *interface in interfaces) {

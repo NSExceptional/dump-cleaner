@@ -97,6 +97,16 @@
     if (_categoryName) {
         // Category
         [_string appendFormat:@" (%@)", _categoryName];
+        
+        // Conformed protocols
+        if (self.conformedProtocols.count) {
+            [_string appendString:@" <"];
+            for (NSString *prot in self.conformedProtocols) {
+                [_string appendFormat:@"%@, ", prot];
+            }
+            [_string appendString:@">"];
+            [_string deleteLastCharacter];
+        }
     }
     else {
         // Superclass
@@ -143,17 +153,35 @@
     ScanAssert([scanner scanIdentifier:&tmp]);
     _name = tmp; tmp = nil;
     
+    BOOL needsSuperclass = NO;
+    NSInteger rightAfterClassName = scanner.scanLocation;
+    if ([scanner scanString:@"<"]) {
+        [scanner scanPastClosingAngleBracket:nil];
+        needsSuperclass = YES;
+    }
+    
     if ([scanner scanString:@"("]) {
         // Category name
         ScanAssert([scanner scanIdentifier:&tmp]);
         _categoryName = tmp; tmp = nil;
         ScanAssert([scanner scanString:@")"])
+        
+        // Conformed protocols
+        NSArray *protocols = nil;
+        if ([scanner scanProtocolConformanceList:&protocols]) {
+            self.conformedProtocols = protocols;
+        }
     } else {
         // Superclass
         if ([scanner scanString:@":"]) {
             ScanAssert([scanner scanIdentifier:&tmp]);
             _superclassName = tmp; tmp = nil;
+        } else if (needsSuperclass) {
+            // Case for classes like NSObject:
+            // @interface NSObject <NSObject>
+            scanner.scanLocation = rightAfterClassName;
         }
+        
         // Conformed protocols
         NSArray *protocols = nil;
         if ([scanner scanProtocolConformanceList:&protocols]) {

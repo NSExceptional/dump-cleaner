@@ -31,7 +31,12 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     self.charactersToBeSkipped = nil;
     [self scanToCharacters:backup.invertedSet];
     self.charactersToBeSkipped = backup;
-    return [self.string characterAtIndex:self.scanLocation];
+    
+    if (self.scanLocation == self.string.length) {
+        return EOF;
+    } else {
+        return [self.string characterAtIndex:self.scanLocation];
+    }
 }
 
 - (NSCharacterSet *)variableNameCharacterSet {
@@ -104,12 +109,23 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     return sharedCharacterSet;
 }
 
+- (NSCharacterSet *)multilineEscapeCharacterSet {
+    static NSCharacterSet *sharedCharacterSet = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"\n\\"];
+    });
+    
+    return sharedCharacterSet;
+}
+
 
 - (BOOL)scanString:(NSString *)string {
     return [self scanString:string intoString:nil];
 }
 
 - (BOOL)scanToString:(NSString *)string {
+    
     ScanPush();
     BOOL ret = [self scanUpToString:string intoString:nil];
     
@@ -242,7 +258,7 @@ static NSString * const kNumericOperatorChars = @"&^|<>";
     
     NSString *scanned = nil;
     BOOL ret = [self scanUpToString:string intoString:&scanned];
-    if ([scanned containsString:@"\n"]) {
+    if ([scanned containsString:@"\n"] || self.scanLocation == self.string.length) {
         ScanPop();
         return NO;
     }

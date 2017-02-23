@@ -16,6 +16,7 @@
 
 
 static NSInteger kHeaderIterationCount = 0;
+static NSInteger kScanInterfaceIterationCount = 0;
 
 @implementation NSScanner (ObjectiveC)
 
@@ -39,7 +40,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     NSString *structt = nil;
     BOOL didRunOnce   = NO;
     
-    kHeaderIterationCount = 0;
+    //    kHeaderIterationCount = 0;
     
     // Scan past comments and other crap, look for interfaces and struct/union declarations
     // Skip untypedef'd structs and unions, skip all enums and forward declarations,
@@ -130,7 +131,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     static NSArray *propAttrs = StaticArray(propAttrs, @"nonatomic", @"copy",
                                             @"readonly", @"assign", @"strong",
                                             @"weak", @"retain", @"atomic", @"class",
-                                            @"nullable", @"nonnull", @"null_resetable", @"readwrite",
+                                            @"nullable", @"nonnull", @"null_resettable", @"readwrite",
                                             @"NS_NONATOMIC_IOSONLY", @"NS_NONATOMIC_IPHONEONLY")
     NSMutableArray *attributes = [NSMutableArray array];
     
@@ -140,17 +141,24 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
         do {
             // Regular attributes
             if ([self scanAny:propAttrs ensureKeyword:YES into:&attr]) {
-            } else {
+                [attributes addObject:attr]; attr = nil;
+            } else if ([self scanAny:propSelectors ensureKeyword:YES into:&attr]) {
                 // getter= / setter= attributes
-                ScanAssertPop([self scanAny:propSelectors ensureKeyword:YES into:&attr] && [self scanString:@"="]);
+                ScanAssertPop([self scanString:@"="]);
                 NSString *selector = nil;
                 ScanAssertPop([self scanSelector:&selector]);
                 attr = [attr stringByAppendingFormat:@"=%@", selector];
+                [attributes addObject:attr]; attr = nil;
+            } else {
+                // @property () Foo bar;
+                break;
             }
-            [attributes addObject:attr]; attr = nil;
         } while ([self scanString:@","]);
         
         ScanAssertPop([self scanString:@")"]);
+        if ([self scanString:@"__attribute__("]) {
+            ScanAssertPop([self scanPastClosingParenthese:nil]);
+        }
     }
     
     DCVariable *variable = nil;
@@ -174,7 +182,14 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     
     // ('-'|'+') '(' [protocol-qualifier]<type>')'
     BOOL isInstanceMethod = [self scanString:@"-"];
-    ScanAssertPop(isInstanceMethod || [self scanString:@"+"]);
+    if (!isInstanceMethod && ![self scanString:@"+"]) {
+        // Edge case... stupid freaking unnecessary macro
+        ScanAssertPop([self scanString:@"AV_INIT_UNAVAILABLE"]);
+        if (output) {
+            *output = [DCMethod types:@[@"instancetype"] selector:@"init" argumentNames:@[] instance:YES];
+        }
+        return YES;
+    }
     
     ScanAssertPop([self scanString:@"("]);
     ScanAppend_(self scanReturnTypeQualifier);
@@ -182,6 +197,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAssertPop((ScanAppend(self scanString:@"instancetype" intoString) || // Just an optimization
                    ScanAppend(self scanBlockMethodParameter) || // order does not matter for these 3
                    ScanAppend(self scanType)) && [self scanString:@")"]);
+    
     [types addObject:__scanned.copy];
     
     // Scan builder will hold the selector
@@ -195,8 +211,9 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
         NSString *returnTypeQualifier = nil, *type = nil, *arg = nil;
         ScanAssertPop([self scanString:@"("]);
         [self scanTypeMemoryQualifier:&returnTypeQualifier];
-        ScanAssertPop(([self scanType:&type] ||
-                       [self scanBlockMethodParameter:&type]) && [self scanString:@")"]);
+        // Order matters here
+        ScanAssertPop(([self scanBlockMethodParameter:&type] || [self scanType:&type]) &&
+                      [self scanString:@")"]);
         
         // Add to types
         if (returnTypeQualifier) {
@@ -267,14 +284,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     // Conformed protocols or generics
     // '<'identifier[, identifier]*'>'
     if (ScanAppend(self scanString:@"<" intoString)) {
-        do {
-            ScanAssertPop(ScanAppend(self scanIdentifier));
-            ScanAppend(self scanPointers);
-        } while (ScanAppendFormat(self scanString:@"," intoString, @"%@ "));
-        
-        // Delete trailing ", "
-        [__scanned deleteCharactersInRange:NSMakeRange(__scanned.length-2, 2)];
-        ScanAssertPop(ScanAppend(self scanString:@">" intoString));
+        ScanAssertPop(ScanAppend(self scanPastClosingAngleBracket));
     }
     
     ScanBuilderWrite(output);
@@ -288,9 +298,13 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     NSMutableArray<DCProperty*> *properties = [NSMutableArray array];
     NSMutableArray<DCMethod*> *methods      = [NSMutableArray array];
     
+    kScanInterfaceIterationCount = 0;
+    
     BOOL didFind = YES;
     while (didFind) {
         didFind = NO;
+        kScanInterfaceIterationCount++;
+        
         if ([self scanProperty:&tmpProp]) {
             [properties addObject:tmpProp];
             
@@ -305,18 +319,27 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
         } else {
             // Skip past comments and things like @optional if protocol
             static NSArray *protocolThings = StaticArray(protocolThings, @"@optional", @"@required");
-            didFind = (isProtocol ? [self scanAny:protocolThings ensureKeyword:YES into:nil] : NO) || [self scanPastIgnoredThing];
+            didFind = (isProtocol ? [self scanAny:protocolThings ensureKeyword:YES into:nil] : NO);
+            didFind = (didFind || [self scanPastIgnoredThing] || [self scanAnyTypedef:nil] ||
+                       [self scanGlobalVariale:nil] || [self scanString:@";"]);
         }
     }
     
     ScanAssertPop([self scanString:@"@end"]);
-    
+    kScanInterfaceIterationCount = 0;
     callback(properties, methods);
     return YES;
 }
 
 - (BOOL)scanProtocolConformanceList:(NSArray<NSString*> **)output {
-    ScanAssert([self scanString:@"<"]);
+    if (![self scanString:@"<"]) {
+        // god dammit apple
+        ScanAssert([self scanString:@"AVAudioUnitMIDIInstrument_MixingConformance"]);
+        if (output) {
+            *output = @[@"AVAudioMixing"];
+            return YES;
+        }
+    }
     
     ScanPush();
     NSMutableArray *protocols = [NSMutableArray array];
@@ -333,15 +356,21 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     return YES;
 }
 
+static NSUInteger kScanIvarsCount = 0;
+
 - (BOOL)scanInstanceVariableList:(NSArray<DCVariable*> **)output {
+    ScanPush();
     ScanAssert([self scanString:@"{"]);
     
-    ScanPush();
     static NSArray *ivarQualifiers = StaticArray(ivarQualifiers, @"@protected", @"@private", @"@public", @"@package");
     NSMutableArray *ivars = [NSMutableArray array];
     DCVariable *tmp = nil;
     
-    while ([self scanAny:ivarQualifiers ensureKeyword:YES into:nil] || [self scanVariable:&tmp]) {
+    kScanIvarsCount = 0;
+    
+    while ([self scanAny:ivarQualifiers ensureKeyword:YES into:nil] ||
+           [self scanVariable:&tmp]) {
+        kScanIvarsCount++;
         if (tmp) {
             [ivars addObject:tmp];
             tmp = nil;
@@ -349,6 +378,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     }
     
     ScanAssertPop([self scanString:@"}"]);
+    kScanIvarsCount = 0;
     
     *output = ivars;
     return YES;
@@ -443,9 +473,10 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanPush();
     
     static NSArray *skippableMacros = StaticArray(skippableMacros, @"NS_ASSUME_NONNULL_BEGIN", @"NS_ASSUME_NONNULL_END",
-                                                  @"CF_ASSUME_NONNULL_BEGIN", @"CF_ASSUME_NONNULL_END");
+                                                  @"CF_ASSUME_NONNULL_BEGIN", @"CF_ASSUME_NONNULL_END",
+                                                  @"CF_EXTERN_C_BEGIN", @"CF_EXTERN_C_END");
     static NSArray *skippablePP   = StaticArray(skippablePP, @"#if", @"#include", @"#import",
-                                                @"#ifndef", @"#ifdef", @"#pragma");
+                                                @"#ifndef", @"#ifdef", @"#pragma", @"#warning");
     
     // Comments, nullability macros
     if ([self scanPastComment] ||
@@ -459,7 +490,6 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     else if ([self scanString:@"#if defined(__cplusplus)"] ||
              [self scanString:@"#ifdef __cplusplus"]) {
         //        NSInteger backup = self.scanLocation;
-        NSString *tmp = nil;
         // Not gonna worry about an elif or else for now
         //        if ([self scanUpToString:@"#else" intoString:&tmp]) {
         //            // If the first branch we scanned doesn't have an else, back up.
@@ -471,32 +501,21 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
         //                ScanAssertPop([self scanString:@"#else"])
         //            }
         //        } else {
-        do {
-            ScanAssertPop([self scanUpToString:@"#endif" intoString:&tmp] &&
-                          [self scanString:@"#endif"]);
-        } while ([tmp containsString:@"#if"] ||
-                 [tmp containsString:@"#ifdef"] ||
-                 [tmp containsString:@"#ifndef"]);
+        [self scanPastClosingEndIfDirective];
         //        }
     }
     // Things we can simply skip to a new line for
     else if ([self scanAny:skippablePP ensureKeyword:YES into:nil]) {
         // If we can't scan to a newline that
         // means we're at the end of the file.
-        if (![self scanToString:@"\n"]) {
+        if (![self scanToString:@"\n"] && [self.string characterAtIndex:self.scanLocation] != '\n') {
             self.scanLocation = self.string.length;
         }
     }
     // Skip all #elif's, we're only going to parse the
     // first branch of all preprocessor conditionals for simplicity.
     else if ([self scanString:@"#elif"] || [self scanString:@"#else"]) {
-        NSString *tmp = nil;
-        do {
-            ScanAssertPop([self scanUpToString:@"#endif" intoString:&tmp] &&
-                          [self scanString:@"#endif"]);
-        } while ([tmp containsString:@"#if"] ||
-                 [tmp containsString:@"#ifdef"] ||
-                 [tmp containsString:@"#ifndef"]);
+        [self scanPastClosingEndIfDirective];
     }
     // #defines, might end with \ which could make it carry onto the next line
     else if ([self scanString:@"#define"]) {
@@ -514,15 +533,20 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
 }
 
 - (BOOL)scanPastComment {
-    ScanPush();
-    
     // Comments like this
     if ([self scanString:@"//"]) {
         [self scanPastSpecialMultilineCommentOrMacro];
         return YES;
     }
     /* comemnts like this */ /** or this */
-    else if ([self scanString:@"/*"]) {
+    else {
+        return [self scanPastInlineComment];
+    }
+}
+
+- (BOOL)scanPastInlineComment {
+    ScanPush();
+    if ([self scanString:@"/*"]) {
         ScanAssertPop([self scanToString:@"*/"]);
         ScanAssertPop([self scanString:@"*/"]);
         return YES;
@@ -590,6 +614,7 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     // Case like AB_EXTERN int ABGetFoo();
     if (ScanAppend_(self scanIdentifier) &&
         (![__scanned hasSuffix:@"_EXTERN "] &&
+         ![__scanned hasSuffix:@"_EXPORT "] &&
          ![__scanned hasSuffix:@"_INLINE "])) {
             ScanPop();
             [__scanned setString:@""];
@@ -634,10 +659,11 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     
     // Case like AB_EXTERN NSString *const ABFoo;
     if (ScanAppend_(self scanIdentifier) &&
-        ![__scanned hasSuffix:@"_EXTERN "]) {
-        ScanPop();
-        [__scanned setString:@""];
-    }
+        (![__scanned hasSuffix:@"_EXTERN "] &&
+         ![__scanned hasSuffix:@"_EXPORT "])) {
+            ScanPop();
+            [__scanned setString:@""];
+        }
     
     static NSArray *globalQualifiers = StaticArray(globalQualifiers, @"static", @"extern");
     ScanAppend_(self scanAny:globalQualifiers ensureKeyword:YES into);
@@ -646,7 +672,14 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanAppend_(self scanTypeMemoryQualifier);
     ScanAssertPop(ScanAppend_(self scanType) &&
                   ScanAppend(self scanIdentifier));
-    [self scanPastClangAttribute];
+    
+    if (ScanAppendFormat(self scanString:@"=" intoString, @" %@ ")) {
+        ScanAssertPop(ScanAppend(self scanUpToString:@";" intoString));
+    } else {
+        [self scanPastInlineComment];
+        [self scanPastClangAttribute];
+    }
+    
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
     
     ScanBuilderWrite(output);
@@ -669,16 +702,14 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     // typedef struct Foo Bar;
     else if (ScanAppend_(self scanAny:types ensureKeyword:YES into)) {
         ScanAssertPop(ScanAppend_(self scanIdentifier) && ScanAppend(self scanIdentifier));
-        [self scanPastClangAttribute];
     }
     else if (ScanAppend_(self scanEnum)) {
         ScanAssertPop(ScanAppend(self scanIdentifier));
-        [self scanPastClangAttribute];
     } else {
         ScanAssertPop(ScanAppend_(self scanNS_CF_ENUM));
-        [self scanPastClangAttribute];
     }
     
+    [self scanPastClangAttribute];
     ScanAssertPop(ScanAppend(self scanString:@";" intoString));
     
     ScanBuilderWrite(output);
@@ -712,7 +743,11 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
     ScanBuilderInit();
     
     ScanAssert(ScanAppend_(self scanWord:@"enum" into));
-    ScanAppend_(self scanIdentifier);
+    // Did this because I didn't feel like accounting for
+    // the various enum syntaxes.
+    // enum Foo {
+    // enum : Type {
+    [self scanToString:@"{"];
     ScanAssertPop(ScanAppend(self scanEnumBody));
     
     ScanBuilderWrite(output);
@@ -774,7 +809,8 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
 
 - (BOOL)scanTypeMemoryQualifier:(NSString **)output {
     static NSArray *qualifiers = StaticArray(qualifiers, @"const", @"volatile", @"static",
-                                             @"__autoreleasing", @"nonnull", @"nullable");
+                                             @"__autoreleasing", @"nonnull", @"nullable",
+                                             @"__strong", @"__weak", @"__kindof");
     ScanBuilderInit();
     
     if (ScanAppend(self scanAny:qualifiers ensureKeyword:YES into)) {
@@ -857,19 +893,37 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
 }
 
 - (BOOL)scanPastSpecialMultilineCommentOrMacro {
+    NSCharacterSet *backup = self.charactersToBeSkipped;
+    self.charactersToBeSkipped = [NSCharacterSet whitespaceCharacterSet];
+    
     // Carefully scan to the next '\' on the same line, and if
     // it is not followed by '\n', keep checking for that. Then
     // finally check for just a newline.
-    while ([self scanToStringOnSameLine:@"\\"]) { }
-    
-    // Case like
-    // //
-    // @interface foo
-    if (self.scanLocation != self.string.length &&
-        [self.string characterAtIndex:self.scanLocation] != '\n') {
-        [self scanToString:@"\n"];
+    BOOL found = NO;
+    while ([self scanToStringOnSameLine:@"\\"]) {
+        [self scanString:@"\\"];
+        found = YES;
     }
     
+    // If we find a \ followed by an \n,
+    if (found && [self scanString:@"\n"]) {
+        // try again. If we don't find another,
+        if (![self scanPastSpecialMultilineCommentOrMacro]) {
+            // Scan past the comment or macro itself.
+            // And if we can't find a new line...
+            if (![self scanToString:@"\n"] && [self.string characterAtIndex:self.scanLocation] != '\n') {
+                // Then we should just go to the end of the file.
+                self.scanLocation = self.string.length;
+            }
+        }
+    } else {
+        // If we don't, scan to the end of the line or file.
+        if (![self scanToString:@"\n"] && [self.string characterAtIndex:self.scanLocation] != '\n') {
+            self.scanLocation = self.string.length;
+        }
+    }
+    
+    self.charactersToBeSkipped = backup;
     return YES;
 }
 
@@ -927,6 +981,37 @@ static NSMutableDictionary<NSString*, DCProtocol*> *dumpedProtocols;
 
 - (BOOL)scanPastClosingBracket:(NSString **)output {
     return [self scanPastClosingTag:'}' opening:'{' output:output];
+}
+
+- (BOOL)scanPastClosingAngleBracket:(NSString **)output {
+    return [self scanPastClosingTag:'>' opening:'<' output:output];
+}
+
+- (BOOL)scanPastClosingEndIfDirective {
+    ScanPush();
+    static NSArray *openings = StaticArray(openings, @"#if", @"#ifdef", @"#ifndef");
+    
+    NSInteger c = 1;
+    while (c > 0 && self.scanLocation < self.string.length) {
+        if ([self.string characterAtIndex:self.scanLocation] == '#') {
+            if ([self scanAny:openings ensureKeyword:NO into:nil]) {
+                c++;
+            } else if ([self scanString:@"#endif"]) {
+                c--;
+            } else {
+                self.scanLocation++;
+            }
+        } else {
+            self.scanLocation++;
+        }
+    }
+    
+    if (c > 0) {
+        ScanPop();
+        return NO;
+    }
+    
+    return YES;
 }
 
 @end
